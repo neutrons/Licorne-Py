@@ -1,9 +1,10 @@
 import numpy as np
+
 def resolution(Q):
     """
     Resolution calculator for TOF
     """
-    print('tof')
+    Q=np.array(Q)
     Theta=0.01
     DTheta=0.0003
     DLambda=0.01

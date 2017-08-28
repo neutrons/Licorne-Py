@@ -1,9 +1,10 @@
 import numpy as np
+
 def resolution(Q):
     """
     Resolution calculator for monochromatic beam
     """
-    print('mono')
+    Q=np.array(Q)
     Lambda=5
     DLambda=0.01
     Theta=np.arcsin(Q*Lambda/(4*np.pi))
