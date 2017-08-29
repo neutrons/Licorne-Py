@@ -62,6 +62,13 @@ class plaintexteditwithlinenumbers(QtWidgets.QPlainTextEdit):
             bottom = top + self.blockBoundingRect(block).height()
             blockNumber += 1
 
+    def keyPressEvent(self,event):
+        if (event.type() == QtCore.QEvent.KeyPress) and (event.key() == QtCore.Qt.Key_Tab):
+            cursor=self.textCursor()
+            cursor.insertText('    ')
+        else:
+            QtWidgets.QPlainTextEdit.keyPressEvent(self, event)
+
 if __name__=='__main__':
     #This is for testing purposes only
     import sys

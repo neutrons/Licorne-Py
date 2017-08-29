@@ -47,30 +47,33 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
             #copy the mono resolution to the temp directory as resolution.py
             shutil.copy(os.path.join(os.path.dirname(__file__),'DefaultResolutionMONO.py'),
                         os.path.join(self.tempdir,'resolution.py'))
-        else:
+        elif res=="Custom":
             #if we don't have a custom file create an empty one
             if not os.path.isfile(os.path.join(self.tempdir,'CustomResolution.py')):
                 open(os.path.join(self.tempdir,'CustomResolution.py'),'w').close()
             #copy the custom file
             shutil.copy(os.path.join(self.tempdir,'CustomResolution.py'),
-                        os.path.join(self.tempdir,'resolution.py'))                 
-        if not os.path.join(self.tempdir,'resolution.py') in sys.path:
-            sys.path.append(self.tempdir)
-        #Force reloading of the resolution function
-        import resolution
-        if hasattr(resolution,'resolution'):
-            del resolution.resolution
-        reload(resolution)
-        self.update_text_from_file()
-        self.update_plot()
+                        os.path.join(self.tempdir,'resolution.py'))
+        if 'editing' not in res:
+            if not os.path.join(self.tempdir,'resolution.py') in sys.path:
+                sys.path.append(self.tempdir)
+            #Force reloading of the resolution function
+            import resolution
+            if hasattr(resolution,'resolution'):
+                del resolution.resolution
+            reload(resolution)
+            self.update_text_from_file()
+            self.update_plot()
 
     def update_text_from_file(self):
+        self.ignore_text_changed=True
         filename=os.path.join(self.tempdir,'resolution.py')
         with open(filename) as f:
             text=f.read()
         self.plainTextEdit_script.clear()
         self.plainTextEdit_script.appendPlainText(text)
         self.plainTextEdit_script.moveCursor(QtGui.QTextCursor.Start)
+        self.ignore_text_changed=False
 
     def update_plot(self):
         r=self.Q*0.
@@ -94,13 +97,18 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
             self.canvas.plot(self.Q,r)
             self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
             shutil.copy(os.path.join(self.tempdir,'resolution.py'),os.path.join(self.tempdir,'CustomResolution.py'))
+            if self.comboBox_resolution_mode.currentIndex()==3:
+                self.comboBox_resolution_mode.setCurrentIndex(2)
+                self.comboBox_resolution_mode.removeItem(3)
         except Exception as e:#TODO message
             print(e)
             shutil.copy(os.path.join(self.tempdir,'resolution.py.bck'),os.path.join(self.tempdir,'resolution.py'))
             self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
     def editing(self):
-        pass
+        if not self.ignore_text_changed:
+            self.comboBox_resolution_mode.addItem("Custom (editing)")
+            self.comboBox_resolution_mode.setCurrentIndex(3)
 
 class ResolutionPlotCanvas(FigureCanvas):
 
@@ -120,8 +128,9 @@ class ResolutionPlotCanvas(FigureCanvas):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         ax.plot(x,y)
-        ax.set_xlabel(r'Momentum transfer Q (${\textrm \AA}^{-1}$)')
-        ax.set_ylabel(r'Resolution $\sigma$ (${\textrm \AA}^{-1}$)')
+        ax.set_xlabel(r'Momentum transfer Q $({\textrm \AA}^{-1})$')
+        ax.set_ylabel(r'Resolution $\sigma$ $({\textrm \AA}^{-1})$')
+        ax.ticklabel_format(style='sci',scilimits=(-1,1),axis='both')
         self.figure.tight_layout()
         self.draw()
 
