@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>792</width>
+    <width>933</width>
     <height>736</height>
    </rect>
   </property>
@@ -55,10 +55,15 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
+         <widget class="QPushButton" name="pushButton_plot">
+          <property name="text">
+           <string>Plot</string>
+          </property>
+         </widget>
          <widget class="LayerPropertiesWidget" name="layer_properties_widget" native="true">
           <property name="minimumSize">
            <size>
-            <width>100</width>
+            <width>400</width>
             <height>0</height>
            </size>
           </property>
@@ -67,7 +72,7 @@
         <widget class="QTextEdit" name="fit_parameters_textEdit">
          <property name="minimumSize">
           <size>
-           <width>400</width>
+           <width>380</width>
            <height>0</height>
           </size>
          </property>
@@ -86,8 +91,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>792</width>
-     <height>22</height>
+     <width>933</width>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
