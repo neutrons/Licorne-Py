@@ -86,7 +86,7 @@ class dataloader(QtWidgets.QWidget,Ui_dataloader):
             self.disableOK()
             return
         self.enableOK()
-        self.data=data[:,[self.qcolumn,self.rcolumn,self.ecolumn]]
+        self.data=data[:,[self.qcolumn-1,self.rcolumn-1,self.ecolumn-1]]
 
     def enableOK(self):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
@@ -95,7 +95,7 @@ class dataloader(QtWidgets.QWidget,Ui_dataloader):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
     def senddata(self):
-        self.dataSignal.emit((self.data,self.Ppolarizer,self.Panalyzer))
+        self.dataSignal.emit((self.data,self.Ppolarizer,self.Panalyzer,self.filename))
         self.close()
 
     def showhelp(self):

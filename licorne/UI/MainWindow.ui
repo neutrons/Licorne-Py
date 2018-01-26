@@ -43,7 +43,7 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>200</height>
+          <height>400</height>
          </size>
         </property>
        </widget>
@@ -55,11 +55,6 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QPushButton" name="plot_pushButton">
-          <property name="text">
-           <string>Plot</string>
-          </property>
-         </widget>
          <widget class="LayerPropertiesWidget" name="layer_properties_widget" native="true">
           <property name="minimumSize">
            <size>
@@ -70,6 +65,12 @@
          </widget>
         </widget>
         <widget class="QTextEdit" name="fit_parameters_textEdit">
+         <property name="minimumSize">
+          <size>
+           <width>400</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>
@@ -89,8 +90,32 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionLoad_layers"/>
+    <addaction name="actionSave_layers"/>
+    <addaction name="actionLoad_experiment_data"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionLoad_layers">
+   <property name="text">
+    <string>Load layers</string>
+   </property>
+  </action>
+  <action name="actionSave_layers">
+   <property name="text">
+    <string>Save layers</string>
+   </property>
+  </action>
+  <action name="actionLoad_experiment_data">
+   <property name="text">
+    <string>Load experiment data</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

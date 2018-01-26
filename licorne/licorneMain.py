@@ -39,7 +39,7 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
     def generate_parameter_list(self):
         string_list=['Layer\tParameter\t\tTied to:']
-        string_list.append('='*50)
+        string_list.append('='*35)
         indexes,names,parameters,ties=LayerList.generate_parameter_lists(self.sample_model[0].layers,
                                                                          self.sample_model[0].incoming_media,
                                                                          self.sample_model[0].substrate)
@@ -55,13 +55,13 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 if __name__=='__main__':
     app = QtWidgets.QApplication(sys.argv)
     sm=SampleModel.SampleModel()
-    sm.addItem(layer.Layer(name='L0',thickness=1,nsld_real=5))
-    sm.addItem(layer.Layer(name='L1',thickness=2.,nsld_real=3))
-    sm.addItem(layer.Layer(name='L2',thickness=1,nsld_real=5))
-    sm.substrate.nsld_real.vary=True
-    sm.layers[0].nsld_real.vary=True
-    sm.layers[0].nsld_real.expr='substrate.nsld_real'
-    sm.layers[0].thickness.vary=True
+    #sm.addItem(layer.Layer(name='L0',thickness=1,nsld_real=5))
+    #sm.addItem(layer.Layer(name='L1',thickness=2.,nsld_real=3))
+    #sm.addItem(layer.Layer(name='L2',thickness=1,nsld_real=5))
+    #sm.substrate.nsld_real.vary=True
+    #sm.layers[0].nsld_real.vary=True
+    #sm.layers[0].nsld_real.expr='substrate.nsld_real'
+    #sm.layers[0].thickness.vary=True
     window = MainWindow([sm])
     window.show()
     sys.exit(app.exec_())
