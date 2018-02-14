@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 import numpy as np
+import warnings
 import os,sys
 
 ui=os.path.join(os.path.dirname(__file__),'UI/data_loader.ui')
@@ -69,7 +70,8 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
 
     def readdata(self):
         try:
-            data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row)
+            with warnings.catch_warnings():
+                data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row)
         except:
             self.disableOK()
             return
