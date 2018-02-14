@@ -2,7 +2,7 @@ import unittest,sys,os
 from PyQt5 import QtTest,QtWidgets,QtCore
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'../licorne')))#needed for UI
-from licorne.dataloader import dataloader
+from licorne.data_loader import data_loader
 
 app=QtWidgets.QApplication(sys.argv)
 
@@ -18,7 +18,7 @@ class Mock(object):
 
 class dataloaderTest(unittest.TestCase):
     def setUp(self):
-        self.form=dataloader()
+        self.form=data_loader()
         self.handler=Mock()
         self.form.dataSignal.connect(self.handler.signalReceived)
         
