@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtCore
 import os
-from licorne.experimental_data import experimental_data
+import licorne.experimental_data
 
 class data_model(QtCore.QAbstractListModel):
     def __init__(self, *args, **kwargs):
@@ -36,7 +36,7 @@ class data_model(QtCore.QAbstractListModel):
         add a single dataset at the end of the list
         '''
         position=len(self.datasets)
-        if not isinstance(item,experimental_data):
+        if not isinstance(item,licorne.experimental_data.experimental_data):
             return
         self.beginInsertRows(QtCore.QModelIndex(), position, position)
         self.datasets.insert(position, item)

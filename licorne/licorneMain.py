@@ -3,9 +3,15 @@ import matplotlib
 matplotlib.use('qt5agg')
 from PyQt5 import QtWidgets, QtCore, uic
 import sys,os
-from licorne import LayerPropertiesWidget, layerselector,layer,SampleModel, LayerList, data_manager_widget
+#import licorne.LayerPropertiesWidget as LayerPropertiesWidget
+#import licorne.layerselector as layerselector
+import licorne.layer
+import licorne.SampleModel
+import licorne.LayerList
+import licorne.data_manager_widget as data_manager_widget
 
-Ui_MainWindow, QtBaseClass = uic.loadUiType('UI/MainWindow.ui')
+ui=os.path.join(os.path.dirname(__file__),'UI/MainWindow.ui')
+Ui_MainWindow, QtBaseClass = uic.loadUiType(ui)
 
 from matplotlib.backends.backend_qt5agg import (
         FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -51,11 +57,18 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.selection=[]
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.layerselector_widget.selectionChanged)
-        self.layerselector_widget.sampleModelChanged[SampleModel.SampleModel].connect(self.update_model)
+        self.layerselector_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.update_model)
         self.data_manager=data_manager_widget.data_manager()
         self.actionLoad_experiment_data.triggered.connect(self.load_experiment)
         self.figure=DataPlotWindow()
-        self.pushButton_plot.clicked.connect(self.do_plot)
+        self.pushButton_plot.clicked.connect(self.do_plot)    
+        from layer import RoughnessModel
+        newSample=[licorne.layer.Layer(thickness=np.inf,nsld_real=0),
+                   licorne.layer.Layer(thickness=20.,nsld_real=1.),
+                   licorne.layer.Layer(thickness=25.,nsld_real=3.,roughness=5, roughness_model=RoughnessModel.TANH,sublayers=7),
+                   licorne.layer.Layer(thickness=30.,nsld_real=5.,msld_rho=7e-7,roughness=3, roughness_model=RoughnessModel.TANH,sublayers=7),
+                   licorne.layer.Layer(nsld_real=4.,thickness=np.inf)]
+        self.plot_widget.updateSample(newSample)
 
     def do_plot(self):
         datasets=self.data_manager.data_model.datasets
@@ -68,7 +81,7 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.data_manager.show()
 
     def update_model(self,sample_model):
-        if isinstance(sample_model,SampleModel.SampleModel):
+        if isinstance(sample_model,licorne.SampleModel.SampleModel):
             self.sample_model=[sample_model]
         else:
             self.sample_model=sample_model
@@ -91,9 +104,9 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
     def generate_parameter_list(self):
         string_list=['Layer\tParameter\t\tTied to:']
         string_list.append('='*35)
-        indexes,names,parameters,ties=LayerList.generate_parameter_lists(self.sample_model[0].layers,
-                                                                         self.sample_model[0].incoming_media,
-                                                                         self.sample_model[0].substrate)
+        indexes,names,parameters,ties=licorne.LayerList.generate_parameter_lists(self.sample_model[0].layers,
+                                                                                 self.sample_model[0].incoming_media,
+                                                                                 self.sample_model[0].substrate)
         for i,n,p,t in zip(indexes,names,parameters,ties):
             if n in ['substrate','incoming_media']:
                 name=n
@@ -105,14 +118,16 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
 if __name__=='__main__':
     app = QtWidgets.QApplication(sys.argv)
-    sm=SampleModel.SampleModel()
-    sm.addItem(layer.Layer(name='L0',thickness=1,nsld_real=5))
-    sm.addItem(layer.Layer(name='L1',thickness=2.,nsld_real=3))
-    sm.addItem(layer.Layer(name='L2',thickness=1,nsld_real=5))
+    sm=licorne.SampleModel.SampleModel()
+    from layer import RoughnessModel
+    sm.addItem(licorne.layer.Layer(thickness=20.,nsld_real=1.))
+    sm.addItem(licorne.layer.Layer(thickness=25.,nsld_real=3.,roughness=5, roughness_model=RoughnessModel.TANH,sublayers=7))
+    sm.addItem(licorne.layer.Layer(thickness=30.,nsld_real=5.,msld_rho=7e-7,roughness=3, roughness_model=RoughnessModel.TANH,sublayers=7))
+    sm.substrate.nsld_real=4.
     sm.substrate.nsld_real.vary=True
     sm.layers[0].nsld_real.vary=True
     sm.layers[0].nsld_real.expr='substrate.nsld_real'
-    sm.layers[0].thickness.vary=True
+    sm.layers[1].thickness.vary=True
     window = MainWindow([sm])
     window.show()
     sys.exit(app.exec_())

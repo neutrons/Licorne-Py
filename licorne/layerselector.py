@@ -1,13 +1,16 @@
 from PyQt5 import QtWidgets, QtCore, uic
-import sys
-from licorne import SampleModel,layer
+import sys,os
 
-Ui_layerselector, QtBaseClass = uic.loadUiType('UI/layerselector.ui')
+from licorne.layer import Layer
+from licorne.SampleModel import SampleModel
+
+ui=os.path.join(os.path.dirname(__file__),'UI/layerselector.ui')
+Ui_layerselector, QtBaseClass = uic.loadUiType(ui)
 
 class layerselector(QtWidgets.QWidget, Ui_layerselector):
     invalidSelection=QtCore.pyqtSignal(str)
-    sampleModelChanged=QtCore.pyqtSignal(SampleModel.SampleModel)
-    def __init__(self,sample_model=SampleModel.SampleModel(),*args):
+    sampleModelChanged=QtCore.pyqtSignal(SampleModel)
+    def __init__(self,sample_model=SampleModel(),*args):
         QtWidgets.QWidget.__init__(self,*args)
         Ui_layerselector.__init__(self)
         self.setupUi(self)
@@ -33,7 +36,7 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
                 else:
                     self.sample_model.addItem(self.sample_model.layers[i-1])
         else:
-            self.sample_model.addItem(layer.Layer())
+            self.sample_model.addItem(Layer())
         self.listView.selectionModel().clear()
         for selection in selected:
             self.listView.selectionModel().select(selection,QtCore.QItemSelectionModel.Select)
@@ -105,10 +108,10 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
 if __name__=='__main__':
     app = QtWidgets.QApplication(sys.argv)
     sm=SampleModel.SampleModel()
-    sm.addItem(layer.Layer(name='L0'))
-    sm.addItem(layer.Layer(name='L1',thickness=2))
-    sm.addItem(layer.Layer(name='L2'))
-    sm.addItem(layer.Layer(name='L3'))
+    sm.addItem(Layer(name='L0'))
+    sm.addItem(Layer(name='L1',thickness=2))
+    sm.addItem(Layer(name='L2'))
+    sm.addItem(Layer(name='L3'))
     window = layerselector(sm)
     window.show()
     sys.exit(app.exec_())

@@ -1,5 +1,3 @@
-from licorne import layer
-
 def generate_available_ties(layer_list,incoming_media, substrate):
     ties_nsld_real=[]
     ties_nsld_imaginary=[]

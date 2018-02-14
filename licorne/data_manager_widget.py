@@ -1,8 +1,9 @@
+from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtWidgets, QtCore, uic
 import sys, os
 from licorne.data_model import data_model
 from licorne.experimental_data import experimental_data
-from licorne.dataloader import dataloader
+from licorne.data_loader import data_loader
 
 ui=os.path.join(os.path.dirname(__file__),'UI/data_manager.ui')
 Ui_data_manager, QtBaseClass = uic.loadUiType(ui)
@@ -102,7 +103,7 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         self.dataModelChanged.emit(self.data_model.datasets)
                 
     def loadfile(self):
-        self.data_dialog=dataloader()
+        self.data_dialog=data_loader()
         self.data_dialog.dataSignal.connect(self.add_data)
         self.data_dialog.show()
         

@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from .layer import Layer #RoughnessModel,MSLD
+import licorne.layer
 import numpy as np
 from six import Iterator
 
@@ -28,8 +28,8 @@ class SampleModel(QtCore.QAbstractListModel):
         Create a sample model with only an incoming media and substrate
         '''
         QtCore.QAbstractListModel.__init__(self, *args, **kwargs)
-        self.incoming_media=Layer(name='incoming media',thickness=np.inf)
-        self.substrate=Layer(name='substrate',thickness=np.inf)
+        self.incoming_media=licorne.layer.Layer(name='incoming media',thickness=np.inf)
+        self.substrate=licorne.layer.Layer(name='substrate',thickness=np.inf)
         self.layers = []
 
     def rowCount(self, parent=None):
@@ -60,7 +60,7 @@ class SampleModel(QtCore.QAbstractListModel):
         add a single layer at the end of the layer list
         '''
         position=len(self.layers)
-        if not isinstance(item,Layer):
+        if not isinstance(item,licorne.layer.Layer):
             return
         self.beginInsertRows(QtCore.QModelIndex(), position, position)
         self.layers.insert(position, item)

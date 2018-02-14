@@ -1,10 +1,12 @@
-from PyQt5 import QtWidgets, QtCore, uic
-import sys
-from licorne import NumericParameter,layer,LayerList
+from __future__ import (absolute_import, division, print_function)
+from PyQt5 import QtWidgets, uic
+import sys,os
+from licorne.layer import Layer
+from licorne.LayerList import generate_available_ties
 import numpy as np
-from collections import Iterable
 
-Ui_LayerProperties, QtBaseClass = uic.loadUiType('UI/LayerPropertiesWidget.ui')
+ui=os.path.join(os.path.dirname(__file__),'UI/LayerPropertiesWidget.ui')
+Ui_LayerProperties, QtBaseClass = uic.loadUiType(ui)
 
 
 class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
@@ -32,7 +34,7 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.selection=[]
         self.ties_nsld_real, self.ties_nsld_imaginary, self.ties_msld_rho, \
             self.ties_msld_theta, self.ties_msld_phi, self.ties_roughness, self.ties_thickness=\
-                LayerList.generate_available_ties(self.layer_list[1:-1],self.layer_list[0],self.layer_list[-1])
+                generate_available_ties(self.layer_list[1:-1],self.layer_list[0],self.layer_list[-1])
 
     def set_selection(self,selected):
         self.selection=selected
@@ -78,11 +80,11 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
 
 if __name__=='__main__':
     app = QtWidgets.QApplication(sys.argv)
-    l1=layer.Layer(name='layer0',nsld_real=1)
+    l1=Layer(name='layer0',nsld_real=1)
     l1.nsld_real.vary=True
-    l2=layer.Layer(nsld_real=2,name='L0')
-    l3=layer.Layer(nsld_real=3)
-    l4=layer.Layer(nsld_real=4)
+    l2=Layer(nsld_real=2,name='L0')
+    l3=Layer(nsld_real=3)
+    l4=Layer(nsld_real=4)
     selected=[1,2]
     window = LayerPropertiesWidget(layers=[l1,l2,l3,l4],selected=selected)
     window.show()

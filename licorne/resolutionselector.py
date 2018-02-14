@@ -1,6 +1,5 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
-import numpy as np
 import sys,os,shutil
 import licorne.utilities as lu
 try:

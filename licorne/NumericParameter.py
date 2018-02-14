@@ -1,14 +1,6 @@
 import numpy as np
 import operator
-from collections import Iterable
 
-def to_iterable(val,dtype=np.float):
-    if isinstance(val,str):
-        return [dtype(x) for x in val.split(',')]
-    elif isinstance(val,Iterable):
-        return [dtype(x) for x in val]
-    else:
-        return [dtype(val)]
 
 class NumericParameter(object):
     """
@@ -50,11 +42,11 @@ class NumericParameter(object):
         expr : str, optional
             Mathematical expression used to constrain the value during the fit.
         """
-        self.name = name
-        self.minimum = minimum
-        self.maximum = maximum
-        self.value = value
-        self.vary = vary
+        self._name = name
+        self._minimum = minimum
+        self._maximum = maximum
+        self._value = value
+        self._vary = vary
         self.expr = expr #TODO: validate expression
 
     name = property(operator.attrgetter('_name'))    
@@ -96,13 +88,13 @@ class NumericParameter(object):
             
     def __repr__(self):
         s=[]
-        if self.name!='':
-            s.append(self.name+':')
-        s.append("Value: {0}".format(self.value))
-        if self.vary:
+        if self._name!='':
+            s.append(self._name+':')
+        s.append("Value: {0}".format(self._value))
+        if self._vary:
             s.append("(Varying)")
         else:
             s.append("(Fixed)")
-        s.append("Bounds: [{0},{1}]".format(self.minimum,self.maximum))
+        s.append("Bounds: [{0},{1}]".format(self._minimum,self._maximum))
         s.append("Tie: {0}".format(self.expr))
         return ' '.join(s)

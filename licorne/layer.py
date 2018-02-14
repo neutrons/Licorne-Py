@@ -1,4 +1,4 @@
-from .NumericParameter import NumericParameter, to_iterable
+from licorne.NumericParameter import NumericParameter
 import operator
 import numpy as np
 from enum import Enum
@@ -15,35 +15,38 @@ class MSLD(object):
     Class that stores information about the magnetic scattering length density
     """
     def __init__(self,rho=0.,theta=0., phi=0.):
-        '''
+        """
         Parameters
         ----------
         rho : float
         theta : float
         phi : float
             The polar components of the magnetic density vector
-        '''
-        self.rho=rho
-        self.theta=theta
-        self.phi=phi
+        """
+        self._rho=NumericParameter('rho',rho)
+        self._theta=NumericParameter('theta',theta)
+        self._phi=NumericParameter('phi',phi)
 
     def __repr__(self):
         s="msld:"
-        for x in (self.rho, self.theta, self.phi):
-            s+='\n  '+x.__repr__()
+        for x in (self._rho, self._theta, self._phi):
+            s += '\n  '+x.__repr__()
         return s
 
     rho = property(operator.attrgetter('_rho'))
+
     @rho.setter
     def rho(self,r):
-        self._rho = NumericParameter('rho',*to_iterable(r))
+        self._rho = NumericParameter('rho',r)
 
     theta = property(operator.attrgetter('_theta'))
+
     @theta.setter
     def theta(self,t):
         self._theta = NumericParameter('theta',t)
 
     phi = property(operator.attrgetter('_phi'))
+
     @phi.setter
     def phi(self,p):
         self._phi = NumericParameter('phi',p)
@@ -63,7 +66,7 @@ class Layer(object):
                  roughness=0.,
                  roughness_model=RoughnessModel.NONE,
                  sublayers=0,
-                 name=None):
+                 name=''):
         """
         Create a layer with the following parameters:
         - thickness: thickness
@@ -81,22 +84,22 @@ class Layer(object):
         To input the value, minimum and maximum, you should enter a 
         triplet (list,set, numpy array, etc)
         """
-        self.thickness=thickness
-        self.nsld_real=nsld_real
-        self.nsld_imaginary=nsld_imaginary
-        self.msld=(msld_rho,msld_theta, msld_phi)
-        self.roughness=roughness
-        self.roughness_model=roughness_model
-        self.sublayers=sublayers
-        self.name=name
+        self._thickness=NumericParameter('thickness',thickness)
+        self._nsld_real=NumericParameter('nsld_real',nsld_real)
+        self._nsld_imaginary=NumericParameter('nsld_imaginary',nsld_imaginary)
+        self._msld=MSLD(msld_rho,msld_theta, msld_phi)
+        self._roughness=NumericParameter('roughness',roughness)
+        self._roughness_model=roughness_model
+        self._sublayers=sublayers
+        self._name=name
 
     def __repr__(self):
         s=[]
-        s.append("name: {0}".format(self.name))
-        for x in [self.thickness,self.nsld_real,self.nsld_imaginary,self.msld, self.roughness]:
+        s.append("name: {0}".format(self._name))
+        for x in [self._thickness,self._nsld_real,self._nsld_imaginary,self._msld, self._roughness]:
             s.append(x.__repr__())
-        s.append("roughness_model: {0}".format(self.roughness_model))
-        s.append("sublayers: {0}".format(self.sublayers))
+        s.append("roughness_model: {0}".format(self._roughness_model))
+        s.append("sublayers: {0}".format(self._sublayers))
         return '\n '.join(s)
 
     name = property(operator.attrgetter('_name'))
@@ -124,12 +127,12 @@ class Layer(object):
 
     @property
     def nsld(self):
-        return np.complex(self.nsld_real.value,self.nsld_imaginary.value)
+        return np.complex(self._nsld_real.value, self._nsld_imaginary.value)
     @nsld.setter
     def nsld(self,v):
-        v=np.complex(*to_iterable(v,dtype=np.complex))
-        self.nsld_real.value=v.real
-        self.nsld_imaginary.value=v.imag
+        v=np.complex(v)
+        self._nsld_real.value=v.real
+        self._nsld_imaginary.value=v.imag
 
     msld = property(operator.attrgetter('_msld'))
     @msld.setter
