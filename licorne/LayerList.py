@@ -1,3 +1,24 @@
+import copy, yaml
+import numpy as np
+import licorne.layer
+
+def save_layers(layer_list,incoming_media, substrate,filename):
+    ll=copy.deepcopy(layer_list)
+    ll.append(substrate)
+    ll.insert(0,incoming_media)
+    with open(filename,'w') as f:
+        yaml.dump(ll,f)
+
+def load_layers(filename):
+    with open(filename,'r') as f:
+        ll=yaml.load(f)
+        for l in ll:
+            if not isinstance(l,licorne.layer.Layer):
+                raise ValueError('The file contains objects that are not Layers')
+        if ll[0].thickness.value!=np.inf and ll[-1].thickness.value!=np.inf:
+            raise ValueError('The substrate or incoming media are missing. They both should be infinitely thick.')
+        return ll
+
 def generate_available_ties(layer_list,incoming_media, substrate):
     ties_nsld_real=[]
     ties_nsld_imaginary=[]

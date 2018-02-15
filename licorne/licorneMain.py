@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import matplotlib
 matplotlib.use('qt5agg')
 from PyQt5 import QtWidgets, QtCore, uic
-import sys,os
+import sys,os,copy
 #import licorne.LayerPropertiesWidget as LayerPropertiesWidget
 #import licorne.layerselector as layerselector
 import licorne.layer
@@ -60,15 +60,18 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.layerselector_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.update_model)
         self.data_manager=data_manager_widget.data_manager()
         self.actionLoad_experiment_data.triggered.connect(self.load_experiment)
+        self.actionLoad_layers.triggered.connect(self.load_layers)
+        self.actionSave_layers.triggered.connect(self.save_layers)
         self.figure=DataPlotWindow()
-        self.pushButton_plot.clicked.connect(self.do_plot)    
-        from layer import RoughnessModel
-        newSample=[licorne.layer.Layer(thickness=np.inf,nsld_real=0),
-                   licorne.layer.Layer(thickness=20.,nsld_real=1.),
-                   licorne.layer.Layer(thickness=25.,nsld_real=3.,roughness=5, roughness_model=RoughnessModel.TANH,sublayers=7),
-                   licorne.layer.Layer(thickness=30.,nsld_real=5.,msld_rho=7e-7,roughness=3, roughness_model=RoughnessModel.TANH,sublayers=7),
-                   licorne.layer.Layer(nsld_real=4.,thickness=np.inf)]
-        self.plot_widget.updateSample(newSample)
+        self.pushButton_plot.clicked.connect(self.do_plot)
+        self.plot_widget.updateSample(self.sample_model[0])
+
+    def closeEvent(self, event):
+        try:
+            self.data_manager.close()
+        except:
+            pass
+        event.accept()
 
     def do_plot(self):
         datasets=self.data_manager.data_model.datasets
@@ -79,6 +82,32 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
 
     def load_experiment(self):
         self.data_manager.show()
+
+    #TODO: save multiple models
+    def save_layers(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","All Files (*)",
+                                                            options=options)
+        licorne.LayerList.save_layers(self.sample_model[0].layers,
+                                      self.sample_model[0].incoming_media,
+                                      self.sample_model[0].substrate,
+                                      fileName)
+
+    #TODO: load multiple models
+    def load_layers(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*)",
+                                                            options=options)
+        if fileName:
+            ll=licorne.LayerList.load_layers(fileName)
+            sm=licorne.SampleModel.SampleModel()
+            sm.incoming_media=copy.deepcopy(ll[0])
+            sm.substrate=copy.deepcopy(ll[-1])
+            for l in ll[1:-1]:
+                sm.addItem(l)
+            self.update_model(sm)
 
     def update_model(self,sample_model):
         if isinstance(sample_model,licorne.SampleModel.SampleModel):
@@ -95,6 +124,7 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.selection=[]
         self.layer_properties_widget.set_selection(self.selection)
         self.generate_parameter_list()
+        self.plot_widget.updateSample(self.sample_model[0])
         
     def update_selection(self,selected,deselected):
         all_selected=self.layerselector_widget.listView.selectionModel().selectedRows()

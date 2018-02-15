@@ -35,6 +35,13 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         self.doubleSpinBox_Poly.valueChanged.connect(self.updatePfromui)
         self.doubleSpinBox_Polz.valueChanged.connect(self.updatePfromui)
 
+    def closeEvent(self, event):
+        try:
+            self.data_dialog.close()
+        except:
+            pass
+        event.accept()
+
     def accept(self):
         self.dataModelChanged.emit(self.data_model.datasets)
         self.close()

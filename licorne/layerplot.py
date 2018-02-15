@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
+import copy
 from licorne.layer import Layer
 from licorne.generateSublayers import generateSublayers
 
@@ -34,8 +35,11 @@ class layerplot(QtWidgets.QWidget):
     def resizeEvent(self, event):
         self.canvas.setGeometry(self.paintwidget.rect())
 
-    def updateSample(self,newsample):
-        self.sample=newsample
+    def updateSample(self,newsamplemodel):
+        ll=copy.deepcopy(newsamplemodel.layers)
+        ll.append(newsamplemodel.substrate)
+        ll.insert(0,newsamplemodel.incoming_media)
+        self.sample=ll
         self.canvas.updateLF(self.sample,self.function)
 
     def functionSelected(self,text):
