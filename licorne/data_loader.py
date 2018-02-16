@@ -62,7 +62,8 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
     def browsefile(self):        
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*)", options=options)
+        fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self,"Open Reflectivity File", "",
+                                                            "All Files (*)", options=options)
         if fileName:
             self.filename=fileName
             self.lineEdit_Filename.setText(self.filename)

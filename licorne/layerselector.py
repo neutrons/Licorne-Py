@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, uic
-import sys,os
+import sys,os,copy
 
 from licorne.layer import Layer
 from licorne.SampleModel import SampleModel
@@ -34,7 +34,7 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
                 if inds in [[0],[self.sample_model.rowCount()-1]]:
                     self.invalidSelection.emit('Cannot add another substrate or incoming media')
                 else:
-                    self.sample_model.addItem(self.sample_model.layers[i-1])
+                    self.sample_model.addItem(copy.deepcopy(self.sample_model.layers[i-1]))
         else:
             self.sample_model.addItem(Layer())
         self.listView.selectionModel().clear()

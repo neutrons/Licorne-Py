@@ -1,5 +1,5 @@
 from __future__ import (absolute_import, division, print_function)
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, QtCore,uic
 import sys,os
 from licorne.layer import Layer
 from licorne.LayerList import generate_available_ties
@@ -28,6 +28,8 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
             if selected is not None:
                 self.set_selection(selected)
         self.Name_lineEdit.setFocus()
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(self.reset)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.apply)
 
     def set_layer_list(self,newlist):
         self.layer_list=newlist
@@ -65,6 +67,18 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.MSLD_rho.updateUiFromParameter([self.layer_list[x].msld.rho for x in self.selection],self.ties_msld_rho,prefix)
         self.Roughness.updateUiFromParameter([self.layer_list[x].roughness for x in self.selection],self.ties_roughness,prefix)
         #TODO: rougness model and sublayers
+
+    def reset(self):
+        self.set_selection(self.selection)
+
+    def apply(self):
+        self.Thickness.update_parameter()
+        self.NSLDR.update_parameter()
+        self.NSLDI.update_parameter()
+        self.MSLD_rho.update_parameter()
+        self.MSLD_theta.update_parameter()
+        self.MSLD_phi.update_parameter()
+        self.Roughness.update_parameter()
 
     def show_hide_roughness_extras(self,selected_tab):
         if selected_tab==5: #roughness tab selected

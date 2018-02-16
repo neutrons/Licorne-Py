@@ -66,10 +66,38 @@ class NumericParameterWidget(PyQt5.QtWidgets.QWidget, Ui_NumericParameter):
                 self.minimum_lineEdit.setText(str(parameter[0].minimum) + ' multiple')
             if len(set((p.maximum for p in parameter))) != 1:
                 self.maximum_lineEdit.setText(str(parameter[0].maximum) + ' multiple')
+        self.parameter=parameter
 
     def add_current_tie(self, name, available_ties):
         if self.fit_radioButton.isChecked() and self.ties_comboBox.findText(name) == -1:
             self.ties_comboBox.addItem(name)
+
+    def update_parameter(self):
+        value=self.value_lineEdit.text().strip()
+        if not(value=='' or 'multiple' in value):
+            value=float(value)
+            if isinstance(self.parameter, licorne.NumericParameter.NumericParameter):
+                self.parameter.value=value
+            else:
+                for p in self.parameter:
+                    p.value=value
+        minimum=self.minimum_lineEdit.text().strip()
+        if not(minimum=='' or 'multiple' in minimum):
+            minimum=float(minimum)
+            if isinstance(self.parameter, licorne.NumericParameter.NumericParameter):
+                self.parameter.minimum=minimum
+            else:
+                for p in self.parameter:
+                    p.minimum=minimum
+        maximum=self.maximum_lineEdit.text().strip()
+        if not(maximum=='' or 'multiple' in maximum):
+            maximum=float(maximum)
+            if isinstance(self.parameter, licorne.NumericParameter.NumericParameter):
+                self.parameter.maximum=maximum
+            else:
+                for p in self.parameter:
+                    p.maximum=maximum
+
 
 
 if __name__ == '__main__':
