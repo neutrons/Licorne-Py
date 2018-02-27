@@ -118,7 +118,7 @@
   </action>
   <action name="actionLoad_experiment_data">
    <property name="text">
-    <string>Load experiment data</string>
+    <string>Experimental data</string>
    </property>
   </action>
  </widget>

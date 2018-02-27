@@ -10,6 +10,9 @@ class data_model(QtCore.QAbstractListModel):
         '''
         QtCore.QAbstractListModel.__init__(self, *args, **kwargs)
         self.datasets=[]
+        self.background=0.0
+        self.theory_factor=1.0
+        self.experiment_factor=1.0
     
     def rowCount(self, parent=None):
         '''

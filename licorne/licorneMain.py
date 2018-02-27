@@ -31,19 +31,19 @@ class DataPlotWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.static_canvas)
         self.addToolBar(NavigationToolbar(self.static_canvas, self))
     
-    def update_plot(self,datasets):
+    def update_plot(self,datasets, bkg, experiment_factor):
         nplots=len(datasets)
         ncols=int(np.ceil(np.sqrt(nplots)))
         nrows=int(np.ceil(nplots/ncols))
         self.static_canvas.figure.clf()
         for i in range(nplots):
             ax=self.static_canvas.figure.add_subplot(nrows,ncols,i+1)
-            ax.plot(datasets[i].Q,datasets[i].R)
+            ax.plot(datasets[i].Q,datasets[i].R*experiment_factor)
             #ax.set_title(os.path.basename(datasets[i].filename))
             ax.set_yscale("log")
             ax.set_ylabel('Reflectivity')
             ax.set_xlabel('Q $(\AA^{-1})$')
-        #self.static_canvas.figure.tight_layout()   
+        self.static_canvas.figure.tight_layout()
         self.static_canvas.draw()
         
 
@@ -75,12 +75,18 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
             self.data_manager.close()
         except:
             pass
+        try:
+            self.figure.close()
+        except:
+            pass
         event.accept()
 
     def do_plot(self):
         datasets=self.data_manager.data_model.datasets
+        bkg=self.data_manager.data_model.background
+        experiment_factor=self.data_manager.data_model.experiment_factor
         if len(datasets)>0:
-            self.figure.update_plot(datasets)
+            self.figure.update_plot(datasets,bkg,experiment_factor)
             self.figure.show()
         
 
