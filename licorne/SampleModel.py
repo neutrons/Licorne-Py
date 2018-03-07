@@ -40,11 +40,11 @@ class SampleModel(QtCore.QAbstractListModel):
         return len(self.layers)+2
 
     def data(self, index, role):
-        '''
+        """
         UI related
         function to return the names of the layers (including substrate and incoming media)
         for display purposes
-        '''
+        """
         display_names = [l.name if l.name!='' else 
                          'Layer{0}'.format(i-1) 
                          for i,l in enumerate([self.incoming_media]+self.layers+[self.substrate])]
@@ -54,12 +54,13 @@ class SampleModel(QtCore.QAbstractListModel):
             return QtCore.QVariant()
         return QtCore.QVariant(display_names[index.row()])
 
-    def addItem(self,item):
-        '''
+    def addItem(self,item,position=None):
+        """
         UI and data related
         add a single layer at the end of the layer list
-        '''
-        position=len(self.layers)
+        """
+        if position is None:
+            position = len(self.layers)
         if not isinstance(item,licorne.layer.Layer):
             return
         self.beginInsertRows(QtCore.QModelIndex(), position, position)

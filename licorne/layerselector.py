@@ -29,17 +29,19 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
     def addClicked(self):
         selected=self.listView.selectionModel().selectedRows()
         inds=sorted([s.row() for s in selected])
+        selected=[]
         if inds:
-            for i in inds:
-                if inds in [[0],[self.sample_model.rowCount()-1]]:
+            for i, j in enumerate(inds):
+                if i in [[0],[self.sample_model.rowCount()-1]]:
                     self.invalidSelection.emit('Cannot add another substrate or incoming media')
                 else:
-                    self.sample_model.addItem(copy.deepcopy(self.sample_model.layers[i-1]))
+                    self.sample_model.addItem(copy.deepcopy(self.sample_model.layers[i-1+j]),i+j)
+                    selected.append(i+j)
         else:
             self.sample_model.addItem(Layer())
         self.listView.selectionModel().clear()
         for selection in selected:
-            self.listView.selectionModel().select(selection,QtCore.QItemSelectionModel.Select)
+            self.listView.selectionModel().select(self.sample_model.index(selection),QtCore.QItemSelectionModel.Select)
         self.sampleModelChanged.emit(self.sample_model)    
 
     def delClicked(self):
@@ -107,7 +109,7 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
 
 if __name__=='__main__':
     app = QtWidgets.QApplication(sys.argv)
-    sm=SampleModel.SampleModel()
+    sm=SampleModel()
     sm.addItem(Layer(name='L0'))
     sm.addItem(Layer(name='L1',thickness=2))
     sm.addItem(Layer(name='L2'))

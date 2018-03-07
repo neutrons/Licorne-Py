@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtWidgets, QtCore,uic
 import sys,os
-from licorne.layer import Layer
+from licorne.layer import Layer,RoughnessModel
 from licorne.LayerList import generate_available_ties
 import numpy as np
 
@@ -30,6 +30,10 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.Name_lineEdit.setFocus()
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Reset).clicked.connect(self.reset)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.apply)
+        self.sublayers_spinBox.setSpecialValueText('Unchanged')
+        self.roughness_model_comboBox.addItem('Unchanged')
+        self.roughness_model_comboBox.addItems([r.name for r in RoughnessModel])
+
 
     def set_layer_list(self,newlist):
         self.layer_list=newlist
@@ -66,10 +70,30 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.MSLD_phi.updateUiFromParameter([self.layer_list[x].msld.phi for x in self.selection],self.ties_msld_phi,prefix)
         self.MSLD_rho.updateUiFromParameter([self.layer_list[x].msld.rho for x in self.selection],self.ties_msld_rho,prefix)
         self.Roughness.updateUiFromParameter([self.layer_list[x].roughness for x in self.selection],self.ties_roughness,prefix)
-        #TODO: rougness model and sublayers
+        self.update_UI_roughness_model([self.layer_list[x].roughness_model for x in self.selection],
+                                       [self.layer_list[x].sublayers for x in self.selection])
 
     def reset(self):
         self.set_selection(self.selection)
+
+    def update_UI_roughness_model(self,roughness_model_list,sublayers_list):
+        if len(set(sublayers_list))==1:
+            self.sublayers_spinBox.setValue(sublayers_list[0])
+        else:
+            self.sublayers_spinBox.setValue(-1)
+        if len(set(roughness_model_list))==1:
+            self.roughness_model_comboBox.setCurrentIndex(self.roughness_model_comboBox.findText(roughness_model_list[0].name))
+        else:
+            self.roughness_model_comboBox.setCurrentIndex(0) # select the 'Unchanged'
+
+    def update_roughness_model(self):
+        if self.roughness_model_comboBox.currentIndex()!=0: # not the 'Unchanged'
+            for x in self.selection:
+                self.layer_list[x].roughness_model=RoughnessModel[self.roughness_model_comboBox.currentText()]
+        if self.sublayers_spinBox.value()!=-1: # not the 'Unchanged'
+            for x in self.selection:
+                self.layer_list[x].sublayers=self.sublayers_spinBox.value()
+
 
     def apply(self):
         self.Thickness.update_parameter()
@@ -79,6 +103,7 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.MSLD_theta.update_parameter()
         self.MSLD_phi.update_parameter()
         self.Roughness.update_parameter()
+        self.update_roughness_model()
 
     def show_hide_roughness_extras(self,selected_tab):
         if selected_tab==5: #roughness tab selected
