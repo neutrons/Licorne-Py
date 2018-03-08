@@ -39,7 +39,7 @@ class SampleModel(QtCore.QAbstractListModel):
         '''
         return len(self.layers)+2
 
-    def data(self, index, role):
+    def data(self, index, role=QtCore.Qt.DisplayRole):
         """
         UI related
         function to return the names of the layers (including substrate and incoming media)

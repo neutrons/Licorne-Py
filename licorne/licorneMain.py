@@ -49,16 +49,17 @@ class DataPlotWindow(QtWidgets.QMainWindow):
 
 
 class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
-    def __init__(self,sample_model_list):
+    def __init__(self,sample_model):
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
-        self.update_model(sample_model_list)
+        self.sample_model = None
+        self.update_model(sample_model)
         self.selection=[]
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.layerselector_widget.selectionChanged)
         self.layerselector_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.update_model)
-        self.layer_properties_widget.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).clicked.connect(self.refresh)
+        self.layer_properties_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.refresh)
         self.data_manager=data_manager_widget.data_manager()
         self.actionLoad_experiment_data.triggered.connect(self.load_experiment)
         self.actionLoad_layers.triggered.connect(self.load_layers)
@@ -67,8 +68,12 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.pushButton_plot.clicked.connect(self.do_plot)
         self.plot_widget.updateSample(self.sample_model)
 
-    def refresh(self):
-        self.update_model(self.sample_model)
+    def refresh(self, new_model):
+        if isinstance(new_model,licorne.SampleModel.SampleModel):
+            self.sample_model=new_model
+            self.update_model(self.sample_model)
+            print("received")
+            print(self.sample_model.substrate)
 
     def closeEvent(self, event):
         try:
@@ -128,7 +133,7 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
                                      self.sample_model.layers+
                                      [self.sample_model.substrate]]
                                      
-        self.layer_properties_widget.set_layer_list(all_layers)
+        self.layer_properties_widget.set_layer_list(self.sample_model)
         self.selection=[]
         self.layer_properties_widget.set_selection(self.selection)
         self.generate_parameter_list()
@@ -141,8 +146,7 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         print(self.layer_properties_widget.layer_list)
 
     def generate_parameter_list(self):
-        string_list=['Layer\tParameter\t\tTied to:']
-        string_list.append('='*35)
+        string_list = [r'Layer\tParameter\t\tTied to:', '=' * 35]
         indexes,names,parameters,ties=licorne.LayerList.generate_parameter_lists(self.sample_model.layers,
                                                                                  self.sample_model.incoming_media,
                                                                                  self.sample_model.substrate)
