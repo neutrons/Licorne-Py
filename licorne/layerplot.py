@@ -48,7 +48,7 @@ class layerplot(QtWidgets.QWidget):
 
 
 class PlotCanvas(FigureCanvas):
-
+    selectionChanged=QtCore.pyqtSignal(int)
     def __init__(self, layers, function, parent=None):
         self.fig = Figure()
         self.fig.patch.set_facecolor('white')
@@ -70,11 +70,14 @@ class PlotCanvas(FigureCanvas):
     def onpick(self,event):
         ind=event.ind[0]
         layer_ind=self.corresponding[ind]
-        if layer_ind==len(self.data)-1:
-            layer_ind='substrate'
-        if layer_ind==0:
-            layer_ind='incoming media'
-        print('picked layer {0}'.format(layer_ind))
+        self.selectionChanged.emit(layer_ind)
+        # for debug purposes
+        #if layer_ind==len(self.data)-1:
+        #    layer_ind='substrate'
+        #if layer_ind==0:
+        #    layer_ind='incoming media'
+        #print('picked layer {0}'.format(layer_ind))
+
         return True
 
     def plot(self):

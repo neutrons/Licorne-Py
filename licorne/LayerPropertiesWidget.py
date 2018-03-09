@@ -110,6 +110,9 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
                 self.layer_list[x].sublayers = self.sublayers_spinBox.value()
 
     def apply(self):
+        if self.Name_lineEdit.text().strip() !='':
+            for x in self.selection:
+                self.layer_list[x].name=self.Name_lineEdit.text().strip()
         self.Thickness.update_parameter()
         self.NSLDR.update_parameter()
         self.NSLDI.update_parameter()
@@ -119,8 +122,6 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.Roughness.update_parameter()
         self.update_roughness_model()
         self.sampleModelChanged.emit(self.sample_model)
-        print("sent")
-        print(self.sample_model.substrate)
 
     def show_hide_roughness_extras(self, selected_tab):
         if selected_tab == 5:  # roughness tab selected

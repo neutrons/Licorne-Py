@@ -97,7 +97,20 @@ class NumericParameterWidget(PyQt5.QtWidgets.QWidget, Ui_NumericParameter):
             else:
                 for p in self.parameter:
                     p.maximum=maximum
+        if self.fit_radioButton.isChecked():
+            vary = True
+        elif self.fixed_radioButton.isChecked():
+            vary = False
+        else:
+            vary = None
+        if vary is not None:
+            if isinstance(self.parameter, licorne.NumericParameter.NumericParameter):
+                self.parameter.vary=vary
+            else:
+                for p in self.parameter:
+                    p.vary=vary
 
+        print(self.parameter)
 
 
 if __name__ == '__main__':

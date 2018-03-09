@@ -39,7 +39,6 @@ class DataPlotWindow(QtWidgets.QMainWindow):
         for i in range(nplots):
             ax=self.static_canvas.figure.add_subplot(nrows,ncols,i+1)
             ax.plot(datasets[i].Q,datasets[i].R*experiment_factor)
-            #ax.set_title(os.path.basename(datasets[i].filename))
             ax.set_yscale("log")
             ax.set_ylabel('Reflectivity')
             ax.set_xlabel('Q $(\AA^{-1})$')
@@ -54,12 +53,13 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
         self.sample_model = None
+        self.selection = []
         self.update_model(sample_model)
-        self.selection=[]
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.layerselector_widget.selectionChanged)
         self.layerselector_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.update_model)
         self.layer_properties_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.refresh)
+        self.plot_widget.canvas.selectionChanged.connect(self.plot_set_selection)
         self.data_manager=data_manager_widget.data_manager()
         self.actionLoad_experiment_data.triggered.connect(self.load_experiment)
         self.actionLoad_layers.triggered.connect(self.load_layers)
@@ -68,12 +68,18 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         self.pushButton_plot.clicked.connect(self.do_plot)
         self.plot_widget.updateSample(self.sample_model)
 
+    def plot_set_selection(self,selection):
+        layer_index = self.layerselector_widget.sample_model.index(selection)
+        self.layerselector_widget.listView.selectionModel().select(layer_index,QtCore.QItemSelectionModel.Select)
+
     def refresh(self, new_model):
         if isinstance(new_model,licorne.SampleModel.SampleModel):
             self.sample_model=new_model
             self.update_model(self.sample_model)
-            print("received")
-            print(self.sample_model.substrate)
+        if self.selection:
+            for s in self.layerselector_widget.listView.selectionModel().selectedRows():
+                self.layerselector_widget.listView.selectionModel().select(s,QtCore.QItemSelectionModel.Deselect)
+                self.layerselector_widget.listView.selectionModel().select(s, QtCore.QItemSelectionModel.Select)
 
     def closeEvent(self, event):
         try:
@@ -134,7 +140,6 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
                                      [self.sample_model.substrate]]
                                      
         self.layer_properties_widget.set_layer_list(self.sample_model)
-        self.selection=[]
         self.layer_properties_widget.set_selection(self.selection)
         self.generate_parameter_list()
         self.plot_widget.updateSample(self.sample_model)
@@ -143,10 +148,9 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         all_selected=self.layerselector_widget.listView.selectionModel().selectedRows()
         self.selection=sorted([s.row() for s in all_selected])
         self.layer_properties_widget.set_selection(self.selection)
-        print(self.layer_properties_widget.layer_list)
 
     def generate_parameter_list(self):
-        string_list = [r'Layer\tParameter\t\tTied to:', '=' * 35]
+        string_list = ['Layer\tParameter\t\tTied to:', '=' * 35]
         indexes,names,parameters,ties=licorne.LayerList.generate_parameter_lists(self.sample_model.layers,
                                                                                  self.sample_model.incoming_media,
                                                                                  self.sample_model.substrate)
