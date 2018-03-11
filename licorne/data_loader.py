@@ -70,9 +70,11 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
             self.update_text()
 
     def readdata(self):
+        print('readdata',self.start_row - 1,self.file_size - self.end_row)
         try:
             with warnings.catch_warnings():
                 data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row)
+                print('dataok')
         except:
             self.disableOK()
             return
