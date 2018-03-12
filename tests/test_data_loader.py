@@ -12,9 +12,9 @@ class Mock(object):
         self.ppol=None
         self.pana=None
     def signalReceived(self,signal):
-        self.shape=signal[0].shape
-        self.ppol=signal[1]
-        self.pana=signal[2]
+        self.shape=signal.Q.shape
+        self.ppol=signal.pol_Polarizer
+        self.pana=signal.pol_Analyzer
 
 class dataloaderTest(unittest.TestCase):
     def setUp(self):
@@ -37,7 +37,7 @@ class dataloaderTest(unittest.TestCase):
         self.assertEqual(self.form.spinBox_FirstRow.value(),26)
         self.assertEqual(self.form.spinBox_LastRow.value(),159)
         QtTest.QTest.mouseClick(okbtn,QtCore.Qt.LeftButton)
-        self.assertEqual(self.handler.shape,(134,3))
+        self.assertEqual(self.handler.shape,(134,))
         
         
 if __name__ == '__main__':
