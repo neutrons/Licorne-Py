@@ -8,9 +8,9 @@ from licorne.data_loader import data_loader
 from licorne.generate_q_data import generate_q_data
 from licorne.resolutionselector import resolutionselector
 
-
-ui=os.path.join(os.path.dirname(__file__),'UI/data_manager.ui')
+ui = os.path.join(os.path.dirname(__file__),'UI/data_manager.ui')
 Ui_data_manager, QtBaseClass = uic.loadUiType(ui)
+
 
 class data_manager(QtWidgets.QWidget,Ui_data_manager):
     dataModelChanged=QtCore.pyqtSignal(data_model)

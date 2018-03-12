@@ -117,9 +117,10 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         search_first_num=True
         try:
             self.kwargs=dict()
-            if sys.version_info>(3,0):
-                self.kwargs={'encoding':"utf-8"}
-            fh=open(self.filename,**(self.kwargs))
+            np_major_version=int(np.version.version.split('.')[1])
+            fh=open(self.filename)
+            if fh.encoding and np_major_version >= 14:
+                self.kwargs={'encoding':fh.encoding}
             fh.close()
         except IOError:
             self.error_dialog.showMessage('Could not read the file')
