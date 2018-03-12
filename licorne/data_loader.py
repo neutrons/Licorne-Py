@@ -132,7 +132,7 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         except IOError:
             self.error_dialog.showMessage('Could not read the file')
         else:
-            with open(self.filename) as fh:
+            with open(self.filename,**(self.kwargs)) as fh:
                 lines=fh.readlines()
                 self.file_size=len(lines)
                 for line_number,line in enumerate(lines):
