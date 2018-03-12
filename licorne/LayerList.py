@@ -70,7 +70,7 @@ def generate_available_ties(layer_list,incoming_media, substrate):
         ties_roughness.append("Substrate.roughness")
     if substrate.thickness.vary and substrate.thickness.expr=='':
         ties_thickness.append("Substrate.thickness")
-    return (ties_nsld_real, ties_nsld_imaginary, ties_msld_rho, \
+    return (ties_nsld_real, ties_nsld_imaginary, ties_msld_rho,
             ties_msld_theta, ties_msld_phi, ties_roughness,ties_thickness)
 
 
@@ -98,5 +98,4 @@ def generate_parameter_lists(layer_list,incoming_media, substrate):
                     layer_names.append(current_layer.name)
                     layer_parameters.append(num_par.name)
                     layer_ties.append(num_par.expr)
-    return(layer_indexes,layer_names,layer_parameters,layer_ties)
-                    
+    return layer_indexes, layer_names, layer_parameters, layer_ties

@@ -11,6 +11,7 @@ import matplotlib.cm
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 
+
 class layerplot(QtWidgets.QWidget):
     def __init__(self, *args):
         QtWidgets.QWidget.__init__(self, *args)
@@ -82,40 +83,41 @@ class PlotCanvas(FigureCanvas):
 
     def plot(self):
         ax = self.figure.add_subplot(111)
-        sublayers,self.corresponding=plot_sublayers(ax,self.data,function=self.variable)
+        sublayers,self.corresponding=plot_sublayers(ax, self.data, parameter=self.variable)
         self.figure.tight_layout()
         self.draw()
 
-def plot_sublayers(ax,layers,function='NSLD_REAL'):
+
+def plot_sublayers(ax, layers, parameter='NSLD_REAL'):
     sublayers,corresponding=generateSublayers(layers)
     thick=[sl.thickness.value for sl in sublayers]
     depth=np.array(thick)
     try:
-        thickmax=depth[np.isfinite(depth)].max()
+        thic_kmax = depth[np.isfinite(depth)].max()
     except ValueError:
-        #all layers are infinite (maybe just incoming media and substrate)
-        thickmax=1
-    depth[np.isinf(depth)]=thickmax
-    th1=depth[corresponding.index(1)]
-    depth=depth.cumsum()
-    depth-=depth[corresponding.index(1)]-th1
-    depth=np.insert(depth,0,depth[0]-thickmax)
+        # all layers are infinite (maybe just incoming media and substrate)
+        thic_kmax = 1
+    depth[np.isinf(depth)]=thic_kmax
+    th1 = depth[corresponding.index(1)]
+    depth = depth.cumsum()
+    depth -= depth[corresponding.index(1)]-th1
+    depth = np.insert(depth,0,depth[0]-thic_kmax)
     ax.clear()
-    if function=='NSLD_REAL':
+    if parameter == 'NSLD_REAL':
         val=np.array([sl.nsld_real.value for sl in sublayers])
-    elif function=='NSLD_IMAGINARY':
+    elif parameter == 'NSLD_IMAGINARY':
         val=np.array([sl.nsld_imaginary.value for sl in sublayers])
-    elif function=='MSLD_RHO':
+    elif parameter == 'MSLD_RHO':
         val=np.array([sl.msld.rho.value for sl in sublayers])
-    elif function=='MSLD_THETA':
+    elif parameter == 'MSLD_THETA':
         val=np.array([sl.msld.theta.value for sl in sublayers])
-    elif function=='MSLD_PHI':
+    elif parameter == 'MSLD_PHI':
         val=np.array([sl.msld.phi.value for sl in sublayers])
-    elif function=='ROUGHNESS':
+    elif parameter == 'ROUGHNESS':
         val=np.array([layer.roughness.value for layer in layers[1:]])
     else:
         raise ValueError('The variable to be plotted could not be found')
-    if function!='ROUGHNESS':
+    if parameter != 'ROUGHNESS':
         ax.plot(depth[1:],val,visible=False)
         ax.plot([-1],[0.],visible=False)
         patches=[]
@@ -129,22 +131,22 @@ def plot_sublayers(ax,layers,function='NSLD_REAL'):
         p.set_array(np.array(corresponding))
         ax.add_collection(p)
         ax.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
-    if function=='ROUGHNESS':
+    if parameter== 'ROUGHNESS':
         ax.plot([-1,depth[1],depth[-1]],[0,np.max(val),np.min(val)],visible=False)
-        xmin,xmax=ax.get_xlim()
-        lthick=[l.thickness.value for l in layers[1:]]
+        xmin, xmax = ax.get_xlim()
+        lthick = [l.thickness.value for l in layers[1:]]
         lthick.insert(0,0.)
-        lthick=np.array(lthick[:-1])
-        depth=lthick.cumsum()
+        lthick = np.array(lthick[:-1])
+        depth = lthick.cumsum()
         ax.scatter(depth,val,c=np.arange(len(val)))
         ax.set_xlim(xmin,xmax)
     ax.set_xlabel('Depth')
-    ax.set_ylabel(function)
-    return (sublayers,corresponding)
+    ax.set_ylabel(parameter.replace('_', ' '))
+    return sublayers, corresponding
 
 
-if __name__=='__main__':
-    #This is for testing purposes only
+if __name__ == '__main__':
+    # This is for testing purposes only
     import sys
     app=QtWidgets.QApplication(sys.argv)
     mainForm=layerplot()

@@ -32,17 +32,17 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
         selected=[]
         if inds:
             for i, j in enumerate(inds):
-                if i in [[0],[self.sample_model.rowCount()-1]]:
+                if j in [0,self.sample_model.rowCount()-1]:
                     self.invalidSelection.emit('Cannot add another substrate or incoming media')
                 else:
                     self.sample_model.addItem(copy.deepcopy(self.sample_model.layers[i-1+j]),i+j)
                     selected.append(i+j)
         else:
             self.sample_model.addItem(Layer())
+        self.sampleModelChanged.emit(self.sample_model)
         self.listView.selectionModel().clear()
         for selection in selected:
             self.listView.selectionModel().select(self.sample_model.index(selection),QtCore.QItemSelectionModel.Select)
-        self.sampleModelChanged.emit(self.sample_model)    
 
     def delClicked(self):
         inds=sorted([s.row() for s in self.listView.selectionModel().selectedRows()], reverse=True)

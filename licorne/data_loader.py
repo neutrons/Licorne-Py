@@ -132,10 +132,11 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         except IOError:
             self.error_dialog.showMessage('Could not read the file')
         else:
-            with open(self.filename,**(self.kwargs)) as fh:
+            with open(self.filename,'rb') as fh:
                 lines=fh.readlines()
                 self.file_size=len(lines)
                 for line_number,line in enumerate(lines):
+                    line=line.decode('utf-8',errors='ignore')
                     self.plainTextEdit_FileContent.appendPlainText(line.rstrip())
                     try:
                         char0=line.strip()[0]
