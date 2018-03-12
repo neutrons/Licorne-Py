@@ -46,6 +46,7 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         self.doubleSpinBox_Poly.valueChanged.connect(self.updatePfromui)
         self.doubleSpinBox_Polz.valueChanged.connect(self.updatePfromui)
         self.disableOK()
+        self.kwargs=dict()
 
     def debuginfo(self,content):
         pass
@@ -73,7 +74,7 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
     def readdata(self):
         try:
             with warnings.catch_warnings():
-                data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row)
+                data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row,**(self.kwargs))
         except:
             self.disableOK()
             return
@@ -115,14 +116,15 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         self.end_row=2
         search_first_num=True
         try:
-            kwargs=dict()
+            self.kwargs=dict()
             if sys.version_info>(3,0):
-                kwargs={'encoding':"utf-8"}
-            fh=open(self.filename,**kwargs)
+                self.kwargs={'encoding':"utf-8"}
+            fh=open(self.filename,**(self.kwargs))
+            fh.close()
         except IOError:
             self.error_dialog.showMessage('Could not read the file')
         else:
-            with fh:
+            with open(self.filename,**(self.kwargs)) as fh:
                 lines=fh.readlines()
                 self.file_size=len(lines)
                 for line_number,line in enumerate(lines):
