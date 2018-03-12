@@ -119,13 +119,20 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
             self.kwargs=dict()
             np_major_version=int(np.version.version.split('.')[1])
             fh=open(self.filename)
-            if fh.encoding and np_major_version >= 14:
-                self.kwargs={'encoding':fh.encoding}
+            encoding = fh.encoding
+            temp = fh.read()
+            if encoding is None:
+                try:
+                    temp.decode('ascii')
+                except UnicodeDecodeError:
+                    encoding='UTF-8'
+            if encoding and np_major_version >= 14:
+                self.kwargs={'encoding':encoding}
             fh.close()
         except IOError:
             self.error_dialog.showMessage('Could not read the file')
         else:
-            with open(self.filename,**(self.kwargs)) as fh:
+            with open(self.filename) as fh:
                 lines=fh.readlines()
                 self.file_size=len(lines)
                 for line_number,line in enumerate(lines):
