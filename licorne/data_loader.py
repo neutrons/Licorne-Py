@@ -120,9 +120,9 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
             np_major_version=int(np.version.version.split('.')[1])
             fh=open(self.filename)
             encoding = fh.encoding
-            temp = fh.read()
             if encoding is None:
                 try:
+                    temp = fh.read()
                     temp.decode('ascii')
                 except UnicodeDecodeError:
                     encoding='UTF-8'
