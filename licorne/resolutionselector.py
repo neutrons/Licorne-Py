@@ -30,9 +30,13 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
         self.resolution_mode='TOF'
         self.comboBox_resolution_mode.activated[str].connect(self.resolution_mode_changed)
         self.resolution_mode_changed(self.resolution_mode)
-        self.btn=self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
-        self.btn.clicked.connect(self.test_script)
+        self.apply_btn=self.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
+        self.apply_btn.clicked.connect(self.test_script)
         self.plainTextEdit_script.textChanged.connect(self.editing)
+        self.ok_btn=self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok)
+        self.cancel_btn=self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel)
+        self.ok_btn.clicked.connect(self.test_script_and_close)
+        self.cancel_btn.clicked.connect(self.close)
 
     def resizeEvent(self, event):
         self.canvas.setGeometry(self.widget_plot_area.rect())
@@ -104,8 +108,12 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
             shutil.copy(os.path.join(self.tempdir,'resolution.py.bck'),os.path.join(self.tempdir,'resolution.py'))
             self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
+    def test_script_and_close(self):
+        self.test_script()
+        self.close()
+
     def editing(self):
-        if not self.ignore_text_changed:
+        if self.comboBox_resolution_mode.count()==3 and not self.ignore_text_changed:
             self.comboBox_resolution_mode.addItem("Custom (editing)")
             self.comboBox_resolution_mode.setCurrentIndex(3)
 

@@ -21,3 +21,9 @@ def defaultQ():
     return the default Q range if no data is loaded
     """
     return numpy.linspace(0.002,0.17,150)
+
+def data_color():
+    return 'black'
+
+def calculated_color():
+    return 'red'

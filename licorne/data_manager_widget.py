@@ -1,9 +1,13 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 import sys, os
+import numpy as np
 from licorne.data_model import data_model
 from licorne.experimental_data import experimental_data
 from licorne.data_loader import data_loader
+from licorne.generate_q_data import generate_q_data
+from licorne.resolutionselector import resolutionselector
+
 
 ui=os.path.join(os.path.dirname(__file__),'UI/data_manager.ui')
 Ui_data_manager, QtBaseClass = uic.loadUiType(ui)
@@ -15,6 +19,7 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         Ui_data_manager.__init__(self)
         self.setupUi(self)
         self.pushButton_load.clicked.connect(self.loadfile)
+        self.pushButton_generate.clicked.connect(self.generate)
         self.pushButton_delete.clicked.connect(self.deletedata)
         self.data_model=data_model()
         self.data_model.setParent(self)
@@ -38,10 +43,31 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         self.lineEdit_background.textChanged.connect(self.update_other)
         self.doubleSpinBox_experiment_norm.valueChanged.connect(self.update_other)
         self.doubleSpinBox_theory_norm.valueChanged.connect(self.update_other)
+        self.pushButton_resolution.clicked.connect(self.load_resolution)
+
+    def load_resolution(self):
+        Qvec=None
+        try:
+            Q=[]
+            for ds in self.datamodel.datasets:
+                Q=np.concatenate([Q,ds.Q])
+            Qvec=np.linspace(np.min(Q),np.max(Q),150)
+        except:
+            pass
+        self.resolution_dialog = resolutionselector(parent=None,Qvec=Qvec)
+        self.resolution_dialog.show()
 
     def closeEvent(self, event):
         try:
             self.data_dialog.close()
+        except:
+            pass
+        try:
+            self.generate_dialog.close()
+        except:
+            pass
+        try:
+            self.resolution_dialog.close()
         except:
             pass
         event.accept()
@@ -49,7 +75,7 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
     def accept(self):
         self.dataModelChanged.emit(self.data_model)
         self.close()
-        
+
     def reject(self):
         pass
 
@@ -109,16 +135,14 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         ind= self.listView.selectionModel().selectedRows()[0].row()
         self.data_model.delItem(ind)
         self.dataModelChanged.emit(self.data_model)
+
+    def generate(self):
+        self.generate_dialog=generate_q_data()
+        self.generate_dialog.dataSignal.connect(self.add_data)
+        self.generate_dialog.show()
     
     def add_data(self,content):
-        ed=experimental_data()
-        ed.Q=content[0][:,0]
-        ed.R=content[0][:,1]
-        ed.E=content[0][:,0]
-        ed.pol_Polarizer=content[1]
-        ed.pol_Analyzer=content[2]
-        ed.filename=content[3]
-        self.data_model.addItem(ed)
+        self.data_model.addItem(content)
         self.dataModelChanged.emit(self.data_model)
                 
     def loadfile(self):

@@ -9,6 +9,7 @@ import licorne.layer
 import licorne.SampleModel
 import licorne.LayerList
 import licorne.data_manager_widget as data_manager_widget
+import licorne.utilities as lu
 
 ui=os.path.join(os.path.dirname(__file__),'UI/MainWindow.ui')
 Ui_MainWindow, QtBaseClass = uic.loadUiType(ui)
@@ -18,6 +19,9 @@ from matplotlib.backends.backend_qt5agg import (
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import numpy as np
+
+matplotlib.rcParams['text.usetex'] = True
+matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
 
 
 class DataPlotWindow(QtWidgets.QMainWindow):
@@ -31,17 +35,23 @@ class DataPlotWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.static_canvas)
         self.addToolBar(NavigationToolbar(self.static_canvas, self))
     
-    def update_plot(self,datasets, bkg, experiment_factor):
+    def update_plot(self,datasets, bkg, experiment_factor, theory_factor):
         nplots=len(datasets)
         ncols=int(np.ceil(np.sqrt(nplots)))
         nrows=int(np.ceil(nplots/ncols))
         self.static_canvas.figure.clf()
         for i in range(nplots):
             ax=self.static_canvas.figure.add_subplot(nrows,ncols,i+1)
-            ax.plot(datasets[i].Q,datasets[i].R*experiment_factor)
+            if datasets[i].R is not None:
+                ax.plot(datasets[i].Q,datasets[i].R*experiment_factor,color=lu.data_color(),label='exp')
+            if datasets[i].R_calc is not None:
+                ax.plot(datasets[i].Q,datasets[i].R_calc*theory_factor+bkg,color=lu.calculated_color(),label='calc')
             ax.set_yscale("log")
             ax.set_ylabel('Reflectivity')
-            ax.set_xlabel('Q $(\AA^{-1})$')
+            ax.set_xlabel(r'Q $({\mathrm \AA}^{-1})$')
+            ax.set_title('Pol:{0} Ana:{1}'.format(datasets[i].pol_Polarizer,datasets[i].pol_Analyzer))
+            if datasets[i].R is not None or datasets[i].R_calc is not None:
+                ax.legend()
         self.static_canvas.figure.tight_layout()
         self.static_canvas.draw()
         
@@ -96,8 +106,9 @@ class  MainWindow(QtWidgets.QMainWindow,Ui_MainWindow):
         datasets=self.data_manager.data_model.datasets
         bkg=self.data_manager.data_model.background
         experiment_factor=self.data_manager.data_model.experiment_factor
+        theory_factor=self.data_manager.data_model.theory_factor
         if len(datasets)>0:
-            self.figure.update_plot(datasets,bkg,experiment_factor)
+            self.figure.update_plot(datasets,bkg,experiment_factor,theory_factor)
             self.figure.show()
         
 

@@ -3,20 +3,21 @@ from PyQt5 import QtCore, QtWidgets, QtGui, uic
 import numpy as np
 import warnings
 import os,sys
+from licorne.experimental_data import experimental_data
 
 ui=os.path.join(os.path.dirname(__file__),'UI/data_loader.ui')
 Ui_data_loader, QtBaseClass = uic.loadUiType(ui)
 
 
 class data_loader(QtWidgets.QWidget,Ui_data_loader):
-    dataSignal=QtCore.pyqtSignal(tuple)
+    dataSignal=QtCore.pyqtSignal(experimental_data)
 
     def __init__(self, *args):
         QtWidgets.QWidget.__init__(self, *args)
         Ui_data_loader.__init__(self)
         self.setupUi(self)
         self.filename=''
-        self.data=np.array([])
+        self.data=experimental_data()
         self.start_row=1
         self.end_row=2
         self.q_column=1
@@ -70,11 +71,9 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
             self.update_text()
 
     def readdata(self):
-        print('readdata',self.start_row - 1,self.file_size - self.end_row)
         try:
             with warnings.catch_warnings():
                 data=np.genfromtxt(self.filename, skip_header=self.start_row - 1, skip_footer=self.file_size - self.end_row)
-                print('dataok')
         except:
             self.disableOK()
             return
@@ -92,7 +91,10 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
             self.disableOK()
             return
         self.enableOK()
-        self.data= data[:,[self.q_column - 1, self.refl_column - 1, self.err_column - 1]]
+        self.data.Q = data[:,self.q_column - 1]
+        self.data.R = data[:,self.refl_column - 1]
+        self.data.E = data[:,self.err_column - 1]
+        self.data.filename = self.filename
 
     def enableOK(self):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
@@ -101,7 +103,7 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
     def senddata(self):
-        self.dataSignal.emit((self.data, self.P_polarizer, self.P_analyzer, self.filename))
+        self.dataSignal.emit(self.data)
         self.close()
 
     def showhelp(self):
@@ -170,6 +172,8 @@ class data_loader(QtWidgets.QWidget,Ui_data_loader):
     def updatePfromui(self):
         self.P_polarizer=np.array([self.doubleSpinBox_Polx.value(), self.doubleSpinBox_Poly.value(), self.doubleSpinBox_Polz.value()])
         self.P_analyzer=np.array([self.doubleSpinBox_Anax.value(), self.doubleSpinBox_Anay.value(), self.doubleSpinBox_Anaz.value()])
+        self.data.pol_Polarizer=self.P_polarizer
+        self.data.pol_Analyzer=self.P_analyzer
 
 if __name__=='__main__':
     #This is for testing purposes only
