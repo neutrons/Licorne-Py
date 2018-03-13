@@ -234,12 +234,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
                 import resolution
                 sigma = resolution.resolution(Q)
+                #FIXME: do resolution convolution (slow)
                 RRr = RR#licorne.reflection.resolut(RR, Q, sigma, 3)
                 chi_array.append((RRr-ds.R)/ds.E)
         print(np.array(chi_array).ravel().mean())
         return np.array(chi_array).ravel()
 
     def do_fit(self):
+        #TODO: move to separate thread
         if self.data_model is None or len(self.data_model.datasets) == 0:
             print("Not enough data to fit. Please load more data")
             return
@@ -255,7 +257,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         result=minimize(self.calculate_residuals,parameters,method=lu.get_minimizer())
         #report_fit(result)
         ma.update_model_from_params(result.params)
-        self.update_data_model(self.data_model)
+        self.refresh(self.sample_model)
 
 
 if __name__ == '__main__':
