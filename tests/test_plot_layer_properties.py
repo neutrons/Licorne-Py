@@ -78,7 +78,7 @@ class TestPlotLayerProperties(unittest.TestCase):
         pc=ax[0].get_children()[0]
         np.testing.assert_equal(pc.get_array(),corresponding)#colors are corresponding to the correct layer
         self.assertEqual(ax[0].get_xlabel(),'Depth')
-        self.assertEqual(ax[0].get_ylabel(),'NSLD_REAL')
+        self.assertEqual(ax[0].get_ylabel(),'NSLD REAL')
         #sublayer nslds
         sl_height_plot=np.array([path.vertices[2][1] for path in pc.get_paths()])
         sl_height_input=np.array([sl.nsld_real.value for sl in sublayers])
