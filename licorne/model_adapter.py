@@ -77,14 +77,11 @@ class ModelAdapter(object):
                                                                   expr=params[p].expr))
 
 
-
 if __name__ == "__main__":
     from licorne.SampleModel import SampleModel
     sm = SampleModel()
-    print(sm.substrate)
     ma = ModelAdapter(sm)
     ps = ma.params_from_model()
     ps['substrate___nsld_real'].value=42.
     ps['substrate___msld___rho'].min=42.5
     ma.update_model_from_params(ps)
-    print(sm.substrate)

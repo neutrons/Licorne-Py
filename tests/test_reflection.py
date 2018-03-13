@@ -1,4 +1,5 @@
 from licorne import reflection
+from licorne.layer import Layer
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import os,copy
@@ -7,8 +8,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-class Layer(object):
-    pass
 
 class TestReflectionClass(unittest.TestCase):
     def test_reference_results(self):
@@ -35,7 +34,10 @@ class TestReflectionClass(unittest.TestCase):
             l.thickness = float(paramfile.readline())
             nsld_tmp = [float(value) for value in paramfile.readline().split()]
             l.nsld = complex(nsld_tmp[0], nsld_tmp[1])
-            l.msld = [float(value) for value in paramfile.readline().split()]
+            msld_xyz = np.array([float(value) for value in paramfile.readline().split()])
+            l.msld.rho = np.sqrt(msld_xyz.dot(msld_xyz))
+            l.msld.phi= np.degrees(np.arctan2(msld_xyz[1],msld_xyz[0]))
+            l.msld.theta=np.degrees(np.arccos(np.nan_to_num(msld_xyz[2]/l.msld.rho.value)))
             l.NC = float(paramfile.readline())
             layers.append(l)
 
@@ -101,8 +103,11 @@ class Testchi3_137(unittest.TestCase):
         l = Layer()
         l.thickness = line[1]
         l.nsld = complex(line[2], line[3])
-        msld = [line[4], np.deg2rad(line[5]), np.deg2rad(line[6])]
-        l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        msld = [line[4], line[5], line[6]]
+        #l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        l.msld.rho=msld[0]
+        l.msld.theta=msld[2]
+        l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
 
@@ -149,8 +154,11 @@ class Testr2_6_508(unittest.TestCase):
         l = Layer()
         l.thickness = line[1]
         l.nsld = complex(line[2], line[3])
-        msld = [line[4], np.deg2rad(line[5]), np.deg2rad(line[6])]
-        l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        msld = [line[4], line[5], line[6]]
+        #l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        l.msld.rho=msld[0]
+        l.msld.theta=msld[2]
+        l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
 
@@ -208,8 +216,11 @@ class Testhelix100(unittest.TestCase):
         l = Layer()
         l.thickness = line[1] # +0.05 # fit improved by adding 0.05?
         l.nsld = complex(line[2], line[3])
-        msld = [line[4], np.deg2rad(line[5]), np.deg2rad(line[6])]
-        l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        msld = [line[4], line[5], line[6]]
+        #l.msld = [msld[0]*np.sin(msld[2])*np.cos(msld[1]), msld[0]*np.sin(msld[2])*np.sin(msld[1]), msld[0]*np.cos(msld[2])]
+        l.msld.rho=msld[0]
+        l.msld.theta=msld[2]
+        l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
     R = reflection.reflection(inc_moment, layers, substrate)

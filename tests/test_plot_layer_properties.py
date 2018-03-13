@@ -72,8 +72,8 @@ class TestPlotLayerProperties(unittest.TestCase):
         layers=layer_data_for_testing()
         sublayers,corresponding=generateSublayers(layers)
         fig,ax=plt.subplots(2,1, sharex=False)
-        plot_sublayers(ax[0],layers,function='NSLD_REAL')
-        plot_sublayers(ax[1],layers,function='ROUGHNESS')
+        plot_sublayers(ax[0],layers,parameter='NSLD_REAL')
+        plot_sublayers(ax[1],layers,parameter='ROUGHNESS')
         #nsld_real plot
         pc=ax[0].get_children()[0]
         np.testing.assert_equal(pc.get_array(),corresponding)#colors are corresponding to the correct layer

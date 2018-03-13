@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 
+
 class Mat(object):
     def __init__(self, size):
         self.oneone = np.zeros(size, dtype=np.complex128)
@@ -10,6 +11,7 @@ class Mat(object):
 
     def __len__(self):
         return len(self.oneone)
+
 
 class SMat(object):
     def __init__(self, size):
@@ -21,17 +23,21 @@ class SMat(object):
     def __len__(self):
         return len(self.M11)
 
+
 def s_moment(A, inc_moment2):
     T = inc_moment2 - A
     return np.sqrt(T)
+
 
 def s_cos(A, thickness, inc_moment2):
     T = s_moment(A, inc_moment2) * thickness
     return np.cos(T)
 
+
 def s_sin(A, thickness, inc_moment2):
     T = s_moment(A, inc_moment2) * thickness
     return np.sin(T)
+
 
 def p_cos(A, B1, B2, B3, th, inc_moment2):
     Bmod = np.sqrt(np.square(B1) + np.square(B2) + np.square(B3))
@@ -53,6 +59,7 @@ def p_cos(A, B1, B2, B3, th, inc_moment2):
         Out.twotwo = T
     return Out
 
+
 def p_sin(A, B1, B2, B3, th, inc_moment2):
     Bmod = np.sqrt(np.square(B1) + np.square(B2) + np.square(B3))
     Out = Mat(len(inc_moment2))
@@ -73,6 +80,7 @@ def p_sin(A, B1, B2, B3, th, inc_moment2):
         Out.twotwo = T
     return Out
 
+
 def mult_mm(A, B):
     Out = Mat(len(A))
     Out.oneone = A.oneone * B.oneone + A.onetwo * B.twoone
@@ -80,6 +88,7 @@ def mult_mm(A, B):
     Out.twoone = A.twoone * B.oneone + A.twotwo * B.twoone
     Out.twotwo = A.twoone * B.onetwo + A.twotwo * B.twotwo
     return Out
+
 
 def mult_nm(A, B):
     Out = Mat(len(B))
@@ -89,11 +98,13 @@ def mult_nm(A, B):
     Out.twotwo = A * B.twotwo
     return Out
 
+
 def s_invmoment(A, inc_moment2):
     T = inc_moment2 - A
     T = np.sqrt(T)
     T = np.reciprocal(T)
     return T
+
 
 def p_moment(A, B1, B2, B3, inc_moment2):
     Bmod = np.sqrt(np.square(B1) + np.square(B2) + np.square(B3))
@@ -115,6 +126,7 @@ def p_moment(A, B1, B2, B3, inc_moment2):
         Out.twotwo = T
     return Out
 
+
 def p_invmoment(A, B1, B2, B3, inc_moment2):
     Bmod = np.sqrt(np.square(B1) + np.square(B2) + np.square(B3))
     Out = Mat(len(inc_moment2))
@@ -135,6 +147,7 @@ def p_invmoment(A, B1, B2, B3, inc_moment2):
         Out.twotwo = T
     return Out
 
+
 def plus_mm(A, B):
     Out = Mat(len(A))
     Out.oneone = A.oneone + B.oneone
@@ -142,6 +155,7 @@ def plus_mm(A, B):
     Out.twoone = A.twoone + B.twoone
     Out.twotwo = A.twotwo + B.twotwo
     return Out
+
 
 def mult_s(A, B):
     Out = SMat(len(A))
@@ -151,6 +165,7 @@ def mult_s(A, B):
     Out.M22 = plus_mm(mult_mm(A.M21, B.M12), mult_mm(A.M22, B.M22))
     return Out
 
+
 def mult_vm(A, B):
     Out = Mat(len(B))
     Out.oneone = A * B.oneone
@@ -158,6 +173,7 @@ def mult_vm(A, B):
     Out.twoone = A * B.twoone
     Out.twotwo = A * B.twotwo
     return Out
+
 
 def inv(A):
     Out = Mat(len(A))
@@ -167,6 +183,7 @@ def inv(A):
     Out.twoone = -1.0 * A.twoone / D
     Out.twotwo = A.oneone / D
     return Out
+
 
 def reflection(inc_moment, parl, sub):
     inc_moment2 = np.square(inc_moment)
@@ -179,10 +196,15 @@ def reflection(inc_moment, parl, sub):
     S.M22.twotwo.fill(complex(1.0, 0.0))
     for cur_layer in parl:
         A = 4.0 * np.pi * cur_layer.nsld
-        th = cur_layer.thickness
-        B1 = 4.0 * np.pi * cur_layer.msld[0]
-        B2 = 4.0 * np.pi * cur_layer.msld[1]
-        B3 = 4.0 * np.pi * cur_layer.msld[2]
+        th = cur_layer.thickness.value
+        B1 = 4.0 * np.pi * cur_layer.msld.rho.value \
+             * np.sin(np.deg2rad(cur_layer.msld.theta.value)) \
+             * np.cos(np.deg2rad(cur_layer.msld.phi.value))
+        B2 = 4.0 * np.pi * cur_layer.msld.rho.value \
+             * np.sin(np.deg2rad(cur_layer.msld.theta.value)) \
+             * np.sin(np.deg2rad(cur_layer.msld.phi.value))
+        B3 = 4.0 * np.pi * cur_layer.msld.rho.value \
+             * np.cos(np.deg2rad(cur_layer.msld.theta.value))
         M = SMat(len(inc_moment2))
         M.M11 = p_cos(A, B1, B2, B3, th, inc_moment2)
         Msin = p_sin(A, B1, B2, B3, th, inc_moment2)
@@ -201,6 +223,7 @@ def reflection(inc_moment, parl, sub):
     Up22 = deepcopy(Down22)
     R = mult_mm(D_1, plus_mm(plus_mm(plus_mm(Up11, Up12), Up21), Up22))
     return R
+
 
 def spin_av(R, n1, n2, pol_eff, an_eff):
     I = complex(0.0, 1.0)
@@ -224,6 +247,7 @@ def spin_av(R, n1, n2, pol_eff, an_eff):
     Out = (RRt.oneone + RRt.twotwo) / 4.0
     return Out
 
+
 def resolut1(RR, q, dq):
     N = len(q)
     denominator = np.zeros(N)
@@ -241,7 +265,7 @@ def resolut1(RR, q, dq):
     # right neighbours and center
     denominator[N - 1] = denominator[N - 1] + 1
     RRr[N - 1] = (RRr[N - 1] + RR[N - 1].real) / denominator[N - 1]
-    for i in range(N-1):
+    for i in range(N - 1):
         k = 1
         denominator[i] = denominator[i] + 1
         RRr[i] = RRr[i] + RR[i].real
@@ -253,6 +277,7 @@ def resolut1(RR, q, dq):
                 break
         RRr[i] = RRr[i] / denominator[i]
     return RRr
+
 
 def resolut2(RR, q, dq):
     N = len(q)
@@ -354,6 +379,7 @@ def resolut2(RR, q, dq):
             RRr[Nm1] = RRr[Nm1] + RR[Nm1].real * np.exp(-1.0 * np.square(qq) / sigma_sq) * deltaq / sigma_pi
             qq = qq + deltaq
     return RRr
+
 
 def resolut3(RR, q, dq):
     N = len(q)
@@ -469,7 +495,8 @@ def resolut3(RR, q, dq):
         qq = np.abs(q[Nm1 - 1] - q[Nm1 - 2])
         three_sigma = 3.0 * dq[Nm1 - 1]
         while qq <= three_sigma:
-            RRr[Nm1 - 1] = RRr[Nm1 - 1] + RR[Nm1 - k].real * np.exp(-qq * qq / sigma_sq) * np.abs(q[Nm1 - k + 1] - q[Nm1 - k - 1]) / (2.0 * sigma_pi)
+            RRr[Nm1 - 1] = RRr[Nm1 - 1] + RR[Nm1 - k].real * np.exp(-qq * qq / sigma_sq) * np.abs(
+                q[Nm1 - k + 1] - q[Nm1 - k - 1]) / (2.0 * sigma_pi)
             k = k + 1
             if Nm1 - k < 1:
                 break
@@ -493,7 +520,8 @@ def resolut3(RR, q, dq):
         qq = abs(q[Nm1] - q[Nm1 - 1])
         three_sigma = 3.0 * dq[Nm1]
         while qq <= three_sigma:
-            RRr[Nm1] = RRr[Nm1] + RR[Nm1 - k].real * np.exp(-qq * qq / sigma_sq) * np.abs(q[Nm1 - k + 1] - q[Nm1 - k - 1]) / (2.0 * sigma_pi)
+            RRr[Nm1] = RRr[Nm1] + RR[Nm1 - k].real * np.exp(-qq * qq / sigma_sq) * np.abs(
+                q[Nm1 - k + 1] - q[Nm1 - k - 1]) / (2.0 * sigma_pi)
             k = k + 1
             if Nm1 - k < 1:
                 break
@@ -504,13 +532,14 @@ def resolut3(RR, q, dq):
             RRr[Nm1] = RRr[Nm1] + RR[Nm1].real * np.exp(-qq * qq / sigma_sq) * deltaq / sigma_pi
             qq = qq + deltaq
     return RRr
- 
+
+
 def resolut(RR, q, dq, res_mode):
     if res_mode == 1:
         return resolut1(RR, q, dq)
     elif res_mode == 2:
         return resolut2(RR, q, dq)
     elif res_mode == 3:
-        return resolut3(RR,q,dq)
+        return resolut3(RR, q, dq)
     else:
         raise RuntimeError("Resolution mode must be 1, 2, or 3")

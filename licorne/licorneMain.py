@@ -8,6 +8,7 @@ import licorne.SampleModel
 import licorne.LayerList
 import licorne.data_manager_widget as data_manager_widget
 import licorne.utilities as lu
+import licorne.generateSublayers
 
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -190,6 +191,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 name = 'Layer{0}'.format(i - 1)
             string_list.append('{0}\t{0}.{1}\t{2}'.format(name, p, t))
         self.fit_parameters_textEdit.setText('\n'.join(string_list))
+
+    def calculate_reflectivity(self):
+        layers=[self.sample_model.incoming_media]+self.sample_model.layers+[self.sample_model.substrate]
+        sublayers = licorne.generateSublayers.generateSublayers(layers)
 
 
 if __name__ == '__main__':
