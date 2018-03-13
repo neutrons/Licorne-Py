@@ -58,23 +58,24 @@ class ModelAdapter(object):
             elif i//7 == len(params)//7-1:
                 layer = self.sample_model.substrate
             else:
-                layer = self.sample_model.layers[i%7-1]
+                layer = self.sample_model.layers[i//7-1]
+            layer.name=name.split('.')[0]
             property_name = name.split(layer.name+'.')[1]
             if 'msld' in property_name:
                 msld_property_name = property_name.split('.')[1]
-                layer.msld.__setattr__(msld_property_name, NumericParameter(name=msld_property_name,
-                                                                            value=params[p].value,
-                                                                            minimum=params[p].min,
-                                                                            maximum=params[p].max,
-                                                                            vary=params[p].vary,
-                                                                            expr=params[p].expr))
+                layer.msld.__getattribute__(msld_property_name).name=msld_property_name
+                layer.msld.__getattribute__(msld_property_name).value=params[p].value
+                layer.msld.__getattribute__(msld_property_name).minimum=params[p].min
+                layer.msld.__getattribute__(msld_property_name).maximum=params[p].max
+                layer.msld.__getattribute__(msld_property_name).vary=params[p].vary
+                layer.msld.__getattribute__(msld_property_name).expr=params[p].expr
             else:
-                layer.__setattr__(property_name, NumericParameter(name=property_name,
-                                                                  value=params[p].value,
-                                                                  minimum=params[p].min,
-                                                                  maximum=params[p].max,
-                                                                  vary=params[p].vary,
-                                                                  expr=params[p].expr))
+                layer.__getattribute__(property_name).name=property_name
+                layer.__getattribute__(property_name).value=params[p].value
+                layer.__getattribute__(property_name).minimum=params[p].min
+                layer.__getattribute__(property_name).maximum=params[p].max
+                layer.__getattribute__(property_name).vary=params[p].vary
+                layer.__getattribute__(property_name).expr=params[p].expr
 
 
 if __name__ == "__main__":
@@ -85,3 +86,4 @@ if __name__ == "__main__":
     ps['substrate___nsld_real'].value=42.
     ps['substrate___msld___rho'].min=42.5
     ma.update_model_from_params(ps)
+    print(sm.substrate)

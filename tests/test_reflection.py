@@ -26,9 +26,10 @@ class TestReflectionClass(unittest.TestCase):
         percentage = float(paramfile.readline())
         nlayers1 = int(paramfile.readline())
         substrate_tmp = [float(value) for value in paramfile.readline().split()]
-        substrate = complex(substrate_tmp[0],substrate_tmp[1])
+        substrate=Layer()
+        substrate.nsld = complex(substrate_tmp[0],substrate_tmp[1])
         NC = float(paramfile.readline())
-        layers = []
+        layers = [Layer(name='Incoming media')]
         for i in range(nlayers1):
             l = Layer()
             l.thickness = float(paramfile.readline())
@@ -37,7 +38,9 @@ class TestReflectionClass(unittest.TestCase):
             msld_xyz = np.array([float(value) for value in paramfile.readline().split()])
             l.msld.rho = np.sqrt(msld_xyz.dot(msld_xyz))
             l.msld.phi= np.degrees(np.arctan2(msld_xyz[1],msld_xyz[0]))
-            l.msld.theta=np.degrees(np.arccos(np.nan_to_num(msld_xyz[2]/l.msld.rho.value)))
+            l.msld.theta=0
+            if l.msld.rho.value!=0:
+                l.msld.theta=np.degrees(np.arccos(np.nan_to_num(msld_xyz[2]/l.msld.rho.value)))
             l.NC = float(paramfile.readline())
             layers.append(l)
 
@@ -48,8 +51,8 @@ class TestReflectionClass(unittest.TestCase):
 
         pol_eff = np.ones(len(q), dtype=np.complex128)
         an_eff = np.ones(len(q), dtype=np.complex128)
-
-        R = reflection.reflection(inc_moment, layers, substrate)
+        layers.append(substrate)
+        R = reflection.reflection(inc_moment, layers)
         for k in range(n_of_outputs):
             RR = reflection.spin_av(R, pol_vecs[k], an_vecs[k], pol_eff, an_eff)
             RR = np.real(RR)
@@ -94,11 +97,11 @@ class Testchi3_137(unittest.TestCase):
     inc_moment = Q / 2.0
 
     sigma = res_chi3_137(Q)
-
-    substrate = complex(3.6214e-006, 0.0)
+    substrate = Layer()
+    substrate.nsld = complex(3.6214e-006, 0.0)
     layer_info = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/chi3_137/profile_sublayers.dat'))
     layer_info = layer_info[:-1]
-    layers = []
+    layers = [Layer(name='Incoming media')]
     for line in layer_info:
         l = Layer()
         l.thickness = line[1]
@@ -110,8 +113,8 @@ class Testchi3_137(unittest.TestCase):
         l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
-
-    R = reflection.reflection(inc_moment, layers, substrate)
+    layers.append(substrate)
+    R = reflection.reflection(inc_moment, layers)
     pol_vecs = [[0.98,0.0,0.0], [-0.98,0.0,0.0], [0.98,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0]]
     an_vecs = [[0.98,0.0,0.0], [-0.98,0.0,0.0], [-0.98,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0]]
     norm_factor=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -145,11 +148,11 @@ class Testr2_6_508(unittest.TestCase):
     inc_moment = q / 2.0
 
     sigma = res_chi3_137(q)
-
-    substrate = complex(3.533e-006, 0.0)
+    substrate=Layer()
+    substrate.nsld = complex(3.533e-006, 0.0)
     layer_info = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/r2_6_508/profile_sublayers.dat'))
     layer_info = layer_info[:-1]
-    layers = []
+    layers = [Layer(name='Incoming media')]
     for line in layer_info:
         l = Layer()
         l.thickness = line[1]
@@ -161,8 +164,8 @@ class Testr2_6_508(unittest.TestCase):
         l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
-
-    R = reflection.reflection(inc_moment, layers, substrate)
+    layers.append(substrate)
+    R = reflection.reflection(inc_moment, layers)
     pol_vecs = [[0.98,0.0,0.0], [-0.98,0.0,0.0], [0.98,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0]]
     an_vecs = [[0.98,0.0,0.0], [-0.98,0.0,0.0], [-0.98,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0]]
     norm_factor=[1.05, 1.05, 1.05, 1.05, 1.05, 1.05]
@@ -207,11 +210,11 @@ class Testhelix100(unittest.TestCase):
     inc_moment = q / 2.0
 
     sigma = res_helix100(q)
-
-    substrate = complex(6.0e-6, 0.0)
+    substrate = Layer()
+    substrate.nsld = complex(6.0e-6, 0.0)
     layer_info = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/helix100/profile_sublayers.dat'))
     layer_info = layer_info[:-1]
-    layers = []
+    layers = [Layer(name='Incoming media')]
     for line in layer_info:
         l = Layer()
         l.thickness = line[1] # +0.05 # fit improved by adding 0.05?
@@ -223,7 +226,8 @@ class Testhelix100(unittest.TestCase):
         l.msld.phi=msld[1]
         l.NC = 0.0
         layers.append(l)
-    R = reflection.reflection(inc_moment, layers, substrate)
+    layers.append(substrate)
+    R = reflection.reflection(inc_moment, layers)
 
     pol_vecs = [[1,0,0],[-1,0,0],[-1,0,0],[0,0,0],[0,0,0],[0,0,0]]
     an_vecs = [[1,0,0],[-1,0,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0]]

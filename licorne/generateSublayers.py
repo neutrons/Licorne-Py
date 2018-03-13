@@ -27,7 +27,7 @@ def rough_sublayer(layer_up,layer_down):
     #some constants
     alpha={"ERFC":sci_sp.erfinv(0.5)*2.,"TANH":np.arctanh(0.5)*2.}
     delta={"ERFC":sci_sp.erfinv(0.97),"TANH":np.arctanh(0.97)}
-    #sigma is multiplied with 1.3 to correspond to Nevot-Croce roughness parameter 
+    #sigma is multiplied with 1.3 to correspond to Nevot-Croce roughness parameter
     sigma=layer_down.roughness.value * 1.3 
     model=layer_down.roughness_model.name
     N=layer_down.sublayers

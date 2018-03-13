@@ -148,7 +148,7 @@ class Layer(object):
     @roughness_model.setter
     def roughness_model(self,v):
         if not isinstance(v,RoughnessModel):
-            raise ValueError('roughness_model is not the corect type')
+            raise ValueError('roughness_model is not the correct type')
         self._roughness_model = v
 
     sublayers = property(operator.attrgetter('_sublayers'))

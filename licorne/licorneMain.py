@@ -9,6 +9,10 @@ import licorne.LayerList
 import licorne.data_manager_widget as data_manager_widget
 import licorne.utilities as lu
 import licorne.generateSublayers
+import licorne.reflection
+import licorne.resolutionselector
+from licorne.model_adapter import ModelAdapter
+from lmfit import minimize, report_fit
 
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -49,7 +53,7 @@ class DataPlotWindow(QtWidgets.QMainWindow):
                         color=lu.data_color(), label='exp')
             if data_model.datasets[i].R_calc is not None:
                 ax.plot(data_model.datasets[i].Q,
-                        data_model.datasets[i].R_calc * data_model.theory_factor + data_model.bkg,
+                        data_model.datasets[i].R_calc * data_model.theory_factor + data_model.background,
                         color=lu.calculated_color(),
                         label='calc')
             ax.set_yscale("log")
@@ -73,8 +77,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.selection = []
         self.figure = []
         self.data_manager = data_manager_widget.data_manager()
-
+        sys.path.append(lu.tempdir().get_tempdir())
         self.update_sample_model(sample_model)
+        licorne.resolutionselector.resolutionselector()
 
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(
@@ -86,6 +91,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionLoad_layers.triggered.connect(self.load_layers)
         self.actionSave_layers.triggered.connect(self.save_layers)
         self.pushButton_plot.clicked.connect(self.do_plot)
+        self.pushButton_fit.clicked.connect(self.do_fit)
         self.plot_widget.updateSample(self.sample_model)
         self.data_manager.dataModelChanged.connect(self.update_data_model)
 
@@ -94,6 +100,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if len(self.figure) > 0:
             if len(self.data_manager.data_model.datasets) > 0:
+                self.calculate_reflectivity()
                 self.figure[-1].update_plot(self.data_manager.data_model)
             else:
                 self.figure[-1].static_canvas.figure.clf()
@@ -122,11 +129,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 f.close()
             except:
                 pass
+        lu.tempdir().del_tempdir()
         event.accept()
 
     def do_plot(self):
+        if self.data_model is None:
+            print("Load/generate some experimental data first")
+            return
         self.figure.append(DataPlotWindow())
         if len(self.data_model.datasets) > 0:
+            self.calculate_reflectivity()
             self.figure[-1].update_plot(self.data_model)
             self.figure[-1].show()
 
@@ -194,24 +206,90 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def calculate_reflectivity(self):
         layers=[self.sample_model.incoming_media]+self.sample_model.layers+[self.sample_model.substrate]
-        sublayers = licorne.generateSublayers.generateSublayers(layers)
+        sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
+        for ds in self.data_model.datasets:
+            Q = ds.Q/2.
+            R = licorne.reflection.reflection(Q,sublayers)
+            pol_eff = np.ones(len(Q), dtype = np.complex128)
+            an_eff = np.ones(len(Q), dtype = np.complex128)
+            RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
+            import resolution
+            sigma = resolution.resolution(Q)
+            RRr = licorne.reflection.resolut(RR, Q, sigma, 3)
+            ds.R_calc=RRr
+
+    def calculate_residuals(self,parameters):
+        sm = copy.deepcopy(self.sample_model)
+        ma = ModelAdapter(sm)
+        ma.update_model_from_params(parameters)
+        layers=[sm.incoming_media]+sm.layers+[sm.substrate]
+        sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
+        chi_array=[]
+        for ds in self.data_model.datasets:
+            if ds.R is not None and len(ds.R)>1:
+                Q = ds.Q/2.
+                R = licorne.reflection.reflection(Q,sublayers)
+                pol_eff = np.ones(len(Q), dtype = np.complex128)
+                an_eff = np.ones(len(Q), dtype = np.complex128)
+                RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
+                import resolution
+                sigma = resolution.resolution(Q)
+                RRr = RR#licorne.reflection.resolut(RR, Q, sigma, 3)
+                chi_array.append((RRr-ds.R)/ds.E)
+        print(np.array(chi_array).ravel().mean())
+        return np.array(chi_array).ravel()
+
+    def do_fit(self):
+        if self.data_model is None or len(self.data_model.datasets) == 0:
+            print("Not enough data to fit. Please load more data")
+            return
+        enough_data=False
+        for ds in self.data_model.datasets:
+            if ds.R is not None and 1 < len(ds.R) == len(ds.E):
+                enough_data=True
+        if not enough_data:
+            print("Could not find data to fit. Did you load any real data?")
+            return
+        ma = ModelAdapter(self.sample_model)
+        parameters=ma.params_from_model()
+        result=minimize(self.calculate_residuals,parameters,method=lu.get_minimizer())
+        #report_fit(result)
+        ma.update_model_from_params(result.params)
+        self.update_data_model(self.data_model)
 
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    sm = licorne.SampleModel.SampleModel()
-    from layer import RoughnessModel
 
-    sm.addItem(licorne.layer.Layer(thickness=20., nsld_real=1.))
-    sm.addItem(
-        licorne.layer.Layer(thickness=25., nsld_real=3., roughness=5, roughness_model=RoughnessModel.TANH, sublayers=7))
-    sm.addItem(licorne.layer.Layer(thickness=30., nsld_real=5., msld_rho=7e-7, roughness=3,
-                                   roughness_model=RoughnessModel.TANH, sublayers=7))
-    sm.substrate.nsld_real = 4.
-    sm.substrate.nsld_real.vary = True
-    sm.layers[0].nsld_real.vary = True
-    sm.layers[0].nsld_real.expr = 'substrate.nsld_real'
-    sm.layers[1].thickness.vary = True
+    temp_dir=lu.tempdir()
+    sm = licorne.SampleModel.SampleModel()
+    from licorne.layer import RoughnessModel
+
+    sm.incoming_media.name = 'Air'
+    siox = licorne.layer.Layer(name = 'SiOx',
+                               thickness = 18.,
+                               nsld_real = 2e-6,
+                               sublayers=10,
+                               roughness=3,
+                               roughness_model=RoughnessModel.ERFC)
+    siox._nsld_real.vary=True
+    siox._nsld_real.minimum=1e-6
+    siox._nsld_real.maximum=4e-6
+    siox._thickness.vary = True
+    siox._thickness.minimum = 1
+    siox._thickness.maximum = 50
+    siox._roughness.vary = True
+    siox._roughness.minimum = 1
+    siox._roughness.maximum = 8
+    sm.addItem(siox)
+    sm.substrate.name = 'Si'
+    sm.substrate.nsld_real = 2.07e-6
+    sm.substrate.roughness = 3.
+    sm.substrate.roughness_model = RoughnessModel.ERFC
+    sm.substrate.sublayers = 8
+    sm.substrate.roughness.vary = True
+    sm.substrate.roughness.minimum = 1
+    sm.substrate.roughness.maximum = 10
     window = MainWindow(sm)
     window.show()
     sys.exit(app.exec_())

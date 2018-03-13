@@ -55,10 +55,25 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QPushButton" name="pushButton_plot">
-          <property name="text">
-           <string>Plot</string>
-          </property>
+
+         
+         <widget class="QWidget" name="gridLayoutWidget">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QPushButton" name="pushButton_plot">
+             <property name="text">
+              <string>Plot</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_fit">
+             <property name="text">
+              <string>Fit</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
          <widget class="LayerPropertiesWidget" name="layer_properties_widget" native="true">
           <property name="minimumSize">

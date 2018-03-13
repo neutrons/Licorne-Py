@@ -110,8 +110,6 @@ class NumericParameterWidget(PyQt5.QtWidgets.QWidget, Ui_NumericParameter):
                 for p in self.parameter:
                     p.vary=vary
 
-        print(self.parameter)
-
 
 if __name__ == '__main__':
     app = PyQt5.QtWidgets.QApplication(sys.argv)

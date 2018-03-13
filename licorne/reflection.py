@@ -185,16 +185,17 @@ def inv(A):
     return Out
 
 
-def reflection(inc_moment, parl, sub):
+def reflection(inc_moment, sublayers):
     inc_moment2 = np.square(inc_moment)
-    T = inc_moment2 - 4.0 * np.pi * sub
+    sub = sublayers[-1]
+    T = inc_moment2 - 4.0 * np.pi * sub.nsld
     sub_moment = np.sqrt(T)
     S = SMat(len(T))
     S.M11.oneone.fill(complex(1.0, 0.0))
     S.M11.twotwo.fill(complex(1.0, 0.0))
     S.M22.oneone.fill(complex(1.0, 0.0))
     S.M22.twotwo.fill(complex(1.0, 0.0))
-    for cur_layer in parl:
+    for cur_layer in sublayers[1:-1]:
         A = 4.0 * np.pi * cur_layer.nsld
         th = cur_layer.thickness.value
         B1 = 4.0 * np.pi * cur_layer.msld.rho.value \

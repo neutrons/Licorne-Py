@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui, uic
 import numpy as np
 import os,sys
 from licorne.experimental_data import experimental_data
+import licorne.utilities as lu
 
 ui=os.path.join(os.path.dirname(__file__),'UI/generate_Q_data.ui')
 Ui_generate_q_data, QtBaseClass = uic.loadUiType(ui)
@@ -15,8 +16,10 @@ class generate_q_data(QtWidgets.QWidget,Ui_generate_q_data):
         Ui_generate_q_data.__init__(self)
         self.setupUi(self)
         self.error_dialog = QtWidgets.QErrorMessage()
-        #self.buttonBox.accepted.connect(self.senddata)
-        #self.buttonBox.rejected.connect(self.close)
+        q_default = lu.defaultQ()
+        self.doubleSpinBox_qmin.setValue(q_default[0])
+        self.doubleSpinBox_qmax.setValue(q_default[-1])
+        self.doubleSpinBox_qstep.setValue(q_default[1]-q_default[0])
 
     def accept(self):
         P_polarizer=np.array([self.doubleSpinBox_Polx.value(), self.doubleSpinBox_Poly.value(), self.doubleSpinBox_Polz.value()])
