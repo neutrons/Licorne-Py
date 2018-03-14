@@ -1,6 +1,6 @@
 from __future__ import (absolute_import, division, print_function)
 from PyQt5 import QtCore
-import os
+import os, copy
 import licorne.experimental_data
 
 class data_model(QtCore.QAbstractListModel):
@@ -13,7 +13,16 @@ class data_model(QtCore.QAbstractListModel):
         self.background=0.0
         self.theory_factor=1.0
         self.experiment_factor=1.0
-    
+
+    def __deepcopy__(self, memodict={}):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.datasets = copy.deepcopy(self.datasets)
+        result.background = self.background
+        result.theory_factor = self.theory_factor
+        result.experiment_factor = self.experiment_factor
+        return result
+
     def rowCount(self, parent=None):
         '''
         UI related

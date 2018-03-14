@@ -7,3 +7,4 @@ class experimental_data(object):
         self.pol_Polarizer=[0.,0.,0.]
         self.pol_Analyzer=[0.,0.,0.]
         self.R_calc=None
+        self.sigmaQ=None

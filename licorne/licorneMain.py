@@ -12,7 +12,8 @@ import licorne.generateSublayers
 import licorne.reflection
 import licorne.resolutionselector
 from licorne.model_adapter import ModelAdapter
-from lmfit import minimize, report_fit
+from lmfit import minimize, report_fit, Parameters
+from licorne.fit_worker import FitWorker
 
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -95,6 +96,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.plot_widget.updateSample(self.sample_model)
         self.data_manager.dataModelChanged.connect(self.update_data_model)
 
+        self.fit_thread = FitWorker()
+        self.fit_thread.chiSquaredChanged[float].connect(self.update_fit)
+        self.fit_thread.smChanged[Parameters].connect(self.update_from_fit_parameters)
+
+    def update_from_fit_parameters(self,pars):
+        ma = ModelAdapter(self.sample_model)
+        ma.update_model_from_params(pars)
+        self.refresh(self.sample_model)
+
+    def update_fit(self,value):
+        self.pushButton_fit.setText('Fit chi={0:.4f}'.format(value))
+
     def update_data_model(self,data_model):
         self.data_model=data_model
 
@@ -111,6 +124,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.layerselector_widget.listView.selectionModel().select(layer_index, QtCore.QItemSelectionModel.Toggle)
 
     def refresh(self, new_sample_model):
+        """
+        sample model changed, including number of layers
+        """
         if isinstance(new_sample_model, licorne.SampleModel.SampleModel):
             self.sample_model = new_sample_model
             self.update_sample_model(self.sample_model)
@@ -173,18 +189,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.update_sample_model(sm)
 
     def update_sample_model(self, sample_model):
+        """
+        only layer properties changed, not selection/number of layers
+        """
         self.sample_model = sample_model
         self.layerselector_widget.set_sample_model(self.sample_model)
-
-        all_layers = [s for s in [self.sample_model.incoming_media] +
-                      self.sample_model.layers +
-                      [self.sample_model.substrate]]
 
         self.layer_properties_widget.set_layer_list(self.sample_model)
         self.layer_properties_widget.set_selection(self.selection)
         self.generate_parameter_list()
         self.plot_widget.updateSample(self.sample_model)
         self.update_data_model(self.data_model)
+        self.pushButton_fit.setText('Fit')
 
     def update_selection(self, selected, deselected):
         all_selected = self.layerselector_widget.listView.selectionModel().selectedRows()
@@ -234,11 +250,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
                 import resolution
                 sigma = resolution.resolution(Q)
-                #FIXME: do resolution convolution (slow)
-                RRr = RR#licorne.reflection.resolut(RR, Q, sigma, 3)
+                RRr = licorne.reflection.resolut(RR, Q, sigma, 1)
                 chi_array.append((RRr-ds.R)/ds.E)
-        print(np.array(chi_array).ravel().mean())
-        return np.array(chi_array).ravel()
+        chi=np.array(chi_array).ravel()
+        print((chi**2).mean())
+        return chi
 
     def do_fit(self):
         #TODO: move to separate thread
@@ -252,12 +268,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not enough_data:
             print("Could not find data to fit. Did you load any real data?")
             return
-        ma = ModelAdapter(self.sample_model)
-        parameters=ma.params_from_model()
-        result=minimize(self.calculate_residuals,parameters,method=lu.get_minimizer())
+        self.fit_thread.initialize(self.sample_model, self.data_model)
+        self.fit_thread.start()
+#        ma = ModelAdapter(self.sample_model)
+#        parameters=ma.params_from_model()
+#        result=minimize(self.calculate_residuals,parameters,method=lu.get_minimizer())
         #report_fit(result)
-        ma.update_model_from_params(result.params)
-        self.refresh(self.sample_model)
+#        ma.update_model_from_params(result.params)
+#        self.refresh(self.sample_model)
 
 
 if __name__ == '__main__':

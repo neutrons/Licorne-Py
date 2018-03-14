@@ -1,5 +1,4 @@
 from lmfit import Parameter, Parameters
-from licorne.NumericParameter import NumericParameter
 
 
 def convert_to_parameter(obj, name):

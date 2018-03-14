@@ -3,7 +3,6 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic
 import sys, os
 import numpy as np
 from licorne.data_model import data_model
-from licorne.experimental_data import experimental_data
 from licorne.data_loader import data_loader
 from licorne.generate_q_data import generate_q_data
 from licorne.resolutionselector import resolutionselector

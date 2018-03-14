@@ -1,6 +1,7 @@
 from PyQt5 import QtCore
 import licorne.layer
 import numpy as np
+import copy
 from six import Iterator
 
 
@@ -30,10 +31,19 @@ class SampleModel(QtCore.QAbstractListModel):
         """
         Create a sample model with only an incoming media and substrate
         """
-        QtCore.QAbstractListModel.__init__(self, *args, **kwargs)
+        super(SampleModel,self).__init__( *args,**kwargs)
+#        QtCore.QAbstractListModel.__init__(self, *args, **kwargs)
         self.incoming_media=licorne.layer.Layer(name='incoming media',thickness=np.inf)
         self.substrate=licorne.layer.Layer(name='substrate',thickness=np.inf)
         self.layers = []
+
+    def __deepcopy__(self, memodict={}):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.substrate = copy.deepcopy(self.substrate)
+        result.incoming_media = copy.deepcopy(self.incoming_media)
+        result.layers = copy.deepcopy(self.layers)
+        return result
 
     def rowCount(self, parent=None):
         """
