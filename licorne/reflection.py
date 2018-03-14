@@ -1,3 +1,4 @@
+#pylint: disable=invalid-name, protected-access, line-too-long
 from copy import deepcopy
 import numpy as np
 
@@ -534,13 +535,37 @@ def resolut3(RR, q, dq):
             qq = qq + deltaq
     return RRr
 
+## 1/sqrt(2pi) constant so we don't have to recalculate it.
+SQRT2PI = 1.0/np.sqrt(2.0*np.pi)
+
+def gaussian(x, mu, sig):
+    """ Gaussian function """
+    return SQRT2PI/sig * np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
+def gaussian_resolution(RR, q, dq):
+    """
+        Faster Gaussian resolution.
+        :param ndarrray RR: reflectivity array
+        :param ndarray q: q values
+        :param ndarray dq: value of dq for each q value
+    """
+    r_ = np.zeros(q.size)
+    n_ = np.zeros(q.size)
+    for i in range(q.size):
+        gauss_ = gaussian(q, q[i], dq[i])
+        n_ += gauss_
+        r_ += RR[i].real * gauss_
+    return r_/n_
 
 def resolut(RR, q, dq, res_mode):
+    """ Choose which resolution implementation to use """
     if res_mode == 1:
         return resolut1(RR, q, dq)
     elif res_mode == 2:
         return resolut2(RR, q, dq)
     elif res_mode == 3:
         return resolut3(RR, q, dq)
+    elif res_mode == 4:
+        return gaussian_resolution(RR, q, dq)
     else:
-        raise RuntimeError("Resolution mode must be 1, 2, or 3")
+        raise RuntimeError("Resolution mode must be 1, 2, 3, or 4")
