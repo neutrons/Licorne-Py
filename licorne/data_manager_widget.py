@@ -43,18 +43,23 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         self.doubleSpinBox_experiment_norm.valueChanged.connect(self.update_other)
         self.doubleSpinBox_theory_norm.valueChanged.connect(self.update_other)
         self.pushButton_resolution.clicked.connect(self.load_resolution)
+        self.resolution_dialog = resolutionselector(parent=None, Qvec=None)
+        self.resolution_dialog.resolution_changed.connect(self.resolution_changed)
 
     def load_resolution(self):
-        Qvec=None
+        q_array = None
         try:
-            Q=[]
-            for ds in self.datamodel.datasets:
-                Q=np.concatenate([Q,ds.Q])
-            Qvec=np.linspace(np.min(Q),np.max(Q),150)
+            q = []
+            for ds in self.data_model.datasets:
+                q = np.concatenate([q,ds.Q])
+            q_array = np.linspace(np.min(q),np.max(q),150)
         except:
             pass
-        self.resolution_dialog = resolutionselector(parent=None,Qvec=Qvec)
+        self.resolution_dialog.update_q(q_array)
         self.resolution_dialog.show()
+
+    def resolution_changed(self):
+        self.dataModelChanged.emit(self.data_model)
 
     def closeEvent(self, event):
         try:

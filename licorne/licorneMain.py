@@ -12,7 +12,7 @@ import licorne.generateSublayers
 import licorne.reflection
 import licorne.resolutionselector
 from licorne.model_adapter import ModelAdapter
-from lmfit import minimize, report_fit, Parameters
+from lmfit import minimize, report_fit, Parameters, minimizer
 from licorne.fit_worker import FitWorker
 
 from matplotlib.backends.backend_qt5agg import (
@@ -80,8 +80,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data_manager = data_manager_widget.data_manager()
         sys.path.append(lu.tempdir().get_tempdir())
         self.update_sample_model(sample_model)
-        licorne.resolutionselector.resolutionselector()
-
+        self.resolution_selector = licorne.resolutionselector.resolutionselector()
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(
             self.layerselector_widget.selectionChanged)
@@ -95,14 +94,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButton_fit.clicked.connect(self.do_fit)
         self.plot_widget.updateSample(self.sample_model)
         self.data_manager.dataModelChanged.connect(self.update_data_model)
-
         self.fit_thread = FitWorker()
         self.fit_thread.chiSquaredChanged[float].connect(self.update_fit)
-        self.fit_thread.smChanged[Parameters].connect(self.update_from_fit_parameters)
+        self.fit_thread.smChanged[minimizer.MinimizerResult].connect(self.update_from_fit_parameters)
 
-    def update_from_fit_parameters(self,pars):
+    def update_from_fit_parameters(self, pars):
         ma = ModelAdapter(self.sample_model)
-        ma.update_model_from_params(pars)
+        ma.update_model_from_params(pars.params)
+        output_string = 'Reduced chi square = {0}\n\n'.format(pars.redchi)
+        for parameter in pars.params:
+            if pars.params[parameter].vary:
+                output_string += pars.params[parameter].name.replace('___', '.').replace('__', ' ')
+                output_string += ' {0}'.format(pars.params[parameter].value)
+                if pars.errorbars:
+                    output_string += ' +/- {0}'.format(pars.params[parameter].stderr)
+                output_string += ' (initial value: {0})\n'.format(pars.init_values[parameter])
+        print(output_string)
         self.refresh(self.sample_model)
 
     def update_fit(self,value):
@@ -216,7 +223,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if n in ['substrate', 'incoming_media']:
                 name = n
             else:
-                name = 'Layer{0}'.format(i - 1)
+                name = 'Layer{0}'.format(i)
             string_list.append('{0}\t{0}.{1}\t{2}'.format(name, p, t))
         self.fit_parameters_textEdit.setText('\n'.join(string_list))
 
@@ -234,11 +241,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             RRr = licorne.reflection.resolut(RR, Q, sigma, 3)
             ds.R_calc=RRr
 
-    def calculate_residuals(self,parameters):
+    def calculate_residuals(self, parameters):
         sm = copy.deepcopy(self.sample_model)
         ma = ModelAdapter(sm)
         ma.update_model_from_params(parameters)
-        layers=[sm.incoming_media]+sm.layers+[sm.substrate]
+        layers = [sm.incoming_media]+sm.layers+[sm.substrate]
         sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
         chi_array=[]
         for ds in self.data_model.datasets:
@@ -257,7 +264,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return chi
 
     def do_fit(self):
-        #TODO: move to separate thread
         if self.data_model is None or len(self.data_model.datasets) == 0:
             print("Not enough data to fit. Please load more data")
             return
@@ -270,46 +276,94 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         self.fit_thread.initialize(self.sample_model, self.data_model)
         self.fit_thread.start()
-#        ma = ModelAdapter(self.sample_model)
-#        parameters=ma.params_from_model()
-#        result=minimize(self.calculate_residuals,parameters,method=lu.get_minimizer())
-        #report_fit(result)
-#        ma.update_model_from_params(result.params)
-#        self.refresh(self.sample_model)
 
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
 
-    temp_dir=lu.tempdir()
-    sm = licorne.SampleModel.SampleModel()
+    temp_dir = lu.tempdir()
+    smod = licorne.SampleModel.SampleModel()
     from licorne.layer import RoughnessModel
 
-    sm.incoming_media.name = 'Air'
-    siox = licorne.layer.Layer(name = 'SiOx',
-                               thickness = 18.,
-                               nsld_real = 2e-6,
-                               sublayers=10,
-                               roughness=3,
-                               roughness_model=RoughnessModel.ERFC)
-    siox._nsld_real.vary=True
-    siox._nsld_real.minimum=1e-6
-    siox._nsld_real.maximum=4e-6
-    siox._thickness.vary = True
-    siox._thickness.minimum = 1
-    siox._thickness.maximum = 50
-    siox._roughness.vary = True
-    siox._roughness.minimum = 1
-    siox._roughness.maximum = 8
-    sm.addItem(siox)
-    sm.substrate.name = 'Si'
-    sm.substrate.nsld_real = 2.07e-6
-    sm.substrate.roughness = 3.
-    sm.substrate.roughness_model = RoughnessModel.ERFC
-    sm.substrate.sublayers = 8
-    sm.substrate.roughness.vary = True
-    sm.substrate.roughness.minimum = 1
-    sm.substrate.roughness.maximum = 10
-    window = MainWindow(sm)
+    smod.substrate.nsld=3.533e-6
+    smod.substrate.roughness = 5.
+    smod.substrate.roughness_model = RoughnessModel.TANH
+    smod.substrate.sublayers = 3
+
+    layer_1 = licorne.layer.Layer(thickness = 40.129,
+                                  nsld_real = 2.6091e-6,
+                                  nsld_imaginary = -3e-8,
+                                  msld_phi = 0,
+                                  msld_theta=90,
+                                  sublayers = 5,
+                                  roughness = 20,
+                                  roughness_model = RoughnessModel.TANH)
+    layer_2 = licorne.layer.Layer(thickness = 44.7345,
+                                  nsld_real = 3.5471e-6,
+                                  nsld_imaginary = -3e-8,
+                                  msld_phi = 0,
+                                  msld_theta=90,
+                                  sublayers = 5,
+                                  roughness = 5,
+                                  roughness_model = RoughnessModel.TANH)
+    layer_3 = licorne.layer.Layer(thickness = 74.9724,
+                                  nsld_real = 2.7438e-6,
+                                  nsld_imaginary = -3e-8,
+                                  msld_rho = 8.3597e-007,
+                                  msld_theta=90,
+                                  msld_phi = 22.83,
+                                  sublayers = 5,
+                                  roughness = 5.7701,
+                                  roughness_model = RoughnessModel.TANH)
+    layer_4 = licorne.layer.Layer(thickness=182.5007,
+                                  nsld_real=2.3033e-6,
+                                  nsld_imaginary=-3e-8,
+                                  msld_rho=2.7461e-006,
+                                  msld_phi=30,
+                                  msld_theta=90,
+                                  sublayers=5,
+                                  roughness=10.0965,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_5 = licorne.layer.Layer(thickness=37.4808,
+                                  nsld_real=2.3092e-006,
+                                  nsld_imaginary=-3e-8,
+                                  msld_rho=1.6061e-007,
+                                  msld_phi=160,
+                                  msld_theta=90,
+                                  sublayers=5,
+                                  roughness=5,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_6 = licorne.layer.Layer(thickness=233.4451,
+                                  nsld_real=6.0653e-006,
+                                  nsld_imaginary=0,
+                                  msld_rho=0,
+                                  msld_theta=90,
+                                  sublayers=5,
+                                  roughness=5,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_7 = licorne.layer.Layer(thickness=12.601,
+                                  nsld_real=4.1822e-006,
+                                  nsld_imaginary=0,
+                                  msld_rho=1.9973e-008,
+                                  msld_theta=90,
+                                  sublayers=5,
+                                  roughness=9.8641,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_8 = licorne.layer.Layer(thickness=212.6825,
+                                  nsld_real=3.7e-006,
+                                  nsld_imaginary=0,
+                                  msld_rho=9.452e-007,
+                                  msld_phi=10,
+                                  msld_theta=90,
+                                  sublayers=5,
+                                  roughness=15.8909,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_3.msld.phi.vary = True
+    layer_4.msld.phi.vary = True
+    layer_5.msld.phi.vary = True
+    layer_7.msld.phi.vary = True
+    layer_8.msld.phi.vary = True
+    smod.layers = [layer_1, layer_2, layer_3, layer_4, layer_5, layer_6, layer_7, layer_8]
+    window = MainWindow(smod)
     window.show()
     sys.exit(app.exec_())

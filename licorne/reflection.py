@@ -196,8 +196,9 @@ def reflection(inc_moment, sublayers):
     S.M11.twotwo.fill(complex(1.0, 0.0))
     S.M22.oneone.fill(complex(1.0, 0.0))
     S.M22.twotwo.fill(complex(1.0, 0.0))
+    incoming_media_nsld = sublayers[0].nsld
     for cur_layer in sublayers[1:-1]:
-        A = 4.0 * np.pi * cur_layer.nsld
+        A = 4.0 * np.pi * (cur_layer.nsld - incoming_media_nsld)
         th = cur_layer.thickness.value
         B1 = 4.0 * np.pi * cur_layer.msld.rho.value \
              * np.sin(np.deg2rad(cur_layer.msld.theta.value)) \

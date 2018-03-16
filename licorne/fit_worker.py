@@ -10,11 +10,11 @@ from licorne.model_adapter import ModelAdapter
 from licorne.reflection import reflection,resolut, spin_av
 from licorne.generateSublayers import generateSublayers
 import licorne.utilities as lu
-from lmfit import minimize, report_fit, Parameters
+from lmfit import minimize, report_fit, minimizer
 
 
 class FitWorker(QtCore.QThread):
-    smChanged = QtCore.pyqtSignal(Parameters)
+    smChanged = QtCore.pyqtSignal(minimizer.MinimizerResult)
     chiSquaredChanged = QtCore.pyqtSignal(float)
 
     def __init__(self):
@@ -59,4 +59,4 @@ class FitWorker(QtCore.QThread):
         #ma.update_model_from_params(result.params)
         #print(self.sample_model.substrate)
         #p=Parameters()
-        self.smChanged.emit(result.params)
+        self.smChanged.emit(result)

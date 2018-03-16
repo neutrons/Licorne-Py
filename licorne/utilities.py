@@ -36,4 +36,4 @@ def calculated_color():
 
 
 def get_minimizer():
-    return 'nelder'
+    return 'leastsq'

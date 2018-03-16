@@ -13,12 +13,14 @@ import matplotlib
 ui=os.path.join(os.path.dirname(__file__),'UI/resolution.ui')
 Ui_resolution, QtBaseClass = uic.loadUiType(ui)
 
+
 class resolutionselector(QtWidgets.QWidget,Ui_resolution):
+    resolution_changed = QtCore.pyqtSignal()
     def __init__(self, parent=None,Qvec=None):
         QtWidgets.QWidget.__init__(self, parent)
         Ui_resolution.__init__(self)
         self.setupUi(self)
-        if Qvec==None:
+        if Qvec is None:
             self.Q=lu.defaultQ()
         else:
             self.Q=Qvec
@@ -37,6 +39,13 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
         self.cancel_btn=self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel)
         self.ok_btn.clicked.connect(self.test_script_and_close)
         self.cancel_btn.clicked.connect(self.close)
+
+    def update_q(self, new_q):
+        if new_q is None:
+           self.Q=lu.defaultQ()
+        else:
+            self.Q=new_q
+        self.resolution_mode_changed(self.resolution_mode)
 
     def resizeEvent(self, event):
         self.canvas.setGeometry(self.widget_plot_area.rect())
@@ -103,6 +112,7 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
             if self.comboBox_resolution_mode.currentIndex()==3:
                 self.comboBox_resolution_mode.setCurrentIndex(2)
                 self.comboBox_resolution_mode.removeItem(3)
+            self.resolution_changed.emit()
         except Exception as e:#TODO message
             print(e)
             shutil.copy(os.path.join(self.tempdir,'resolution.py.bck'),os.path.join(self.tempdir,'resolution.py'))

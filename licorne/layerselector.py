@@ -71,7 +71,11 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
                 return
         else:
             try:
-                s=[int(x) if x.strip()!='' else None for x in slice_parts]
+                s = [int(x) if x.strip() != '' else None for x in slice_parts]
+                try:  # first layer is 1
+                    s[0] -= 1
+                except TypeError:
+                    pass
                 selection_slice=slice(*s)
             except ValueError:
                 self.invalidSelection.emit(selection_string+' cannot be converted to a slice')

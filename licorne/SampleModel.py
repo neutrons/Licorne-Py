@@ -59,7 +59,7 @@ class SampleModel(QtCore.QAbstractListModel):
         for display purposes
         """
         display_names = [l.name if l.name!='' else 
-                         'Layer{0}'.format(i-1) 
+                         'Layer{0}'.format(i)
                          for i,l in enumerate([self.incoming_media]+self.layers+[self.substrate])]
         if not index.isValid():
             return QtCore.QVariant()
