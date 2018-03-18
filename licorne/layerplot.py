@@ -139,7 +139,6 @@ def plot_sublayers(ax, layers, parameter='NSLD_REAL'):
         lthick = np.array(lthick[:-1])
         depth = lthick.cumsum()
         ax.stem(depth,val,linefmt='--')
-        #ax.scatter(depth,val,c=np.arange(len(val)))
         ax.set_xlim(xmin,xmax)
     ax.axhline(y=0)
     ax.set_xlabel('Depth')

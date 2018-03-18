@@ -84,7 +84,9 @@ class TestPlotLayerProperties(unittest.TestCase):
         sl_height_input=np.array([sl.nsld_real.value for sl in sublayers])
         np.testing.assert_allclose(sl_height_plot,sl_height_input,atol=1e-12)
         #roughness plot
-        np.testing.assert_allclose(ax[1].get_children()[0].get_offsets(),np.array([[.0,0],[90,8],[130,5],[205,4],[330,5]]),atol=1e-3)
+        x, y = ax[1].get_children()[1].get_data()
+        np.testing.assert_allclose(x, np.array([0, 90., 130.,205., 330]),atol=1e-9)
+        np.testing.assert_allclose(y, np.array([0.,  8.,  5.,  4.,  5.]),atol=1e-9)
         self.assertEqual(ax[1].get_xlabel(),'Depth')
         self.assertEqual(ax[1].get_ylabel(),'ROUGHNESS')
         plt.close()

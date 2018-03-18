@@ -77,6 +77,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data_model = None
         self.selection = []
         self.figure = []
+        self.frw = None
         self.data_manager = data_manager_widget.data_manager()
         sys.path.append(lu.tempdir().get_tempdir())
         self.update_sample_model(sample_model)
@@ -111,6 +112,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 output_string += ' (initial value: {0})\n'.format(pars.init_values[parameter])
         print(output_string)
         self.refresh(self.sample_model)
+        self.frw = QtWidgets.QTextEdit(readOnly=True,minimumWidth=700)
+        self.frw.setText(output_string)
+        self.frw.show()
 
     def update_fit(self,value):
         self.pushButton_fit.setText('Fit chi={0:.4f}'.format(value))
@@ -145,6 +149,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         try:
             self.data_manager.close()
+        except:
+            pass
+        try:
+            self.frw.close()
         except:
             pass
         for f in self.figure:
