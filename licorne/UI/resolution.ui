@@ -43,7 +43,7 @@
   <customwidget>
    <class>plaintexteditwithlinenumbers</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">plaintexteditwithlinenumbers.h</header>
+   <header location="global">licorne.plaintexteditwithlinenumbers</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -153,7 +153,7 @@
   <customwidget>
    <class>NumericParameterWidget</class>
    <extends>QWidget</extends>
-   <header location="global">NumericParameterWidget.h</header>
+   <header location="global">licorne.NumericParameterWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

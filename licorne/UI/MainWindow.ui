@@ -141,19 +141,19 @@
   <customwidget>
    <class>layerselector</class>
    <extends>QWidget</extends>
-   <header location="global">layerselector.h</header>
+   <header location="global">licorne.layerselector</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>LayerPropertiesWidget</class>
    <extends>QWidget</extends>
-   <header location="global">LayerPropertiesWidget.h</header>
+   <header location="global">licorne.LayerPropertiesWidget</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>layerplot</class>
    <extends>QWidget</extends>
-   <header location="global">layerplot.h</header>
+   <header location="global">licorne.layerplot</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

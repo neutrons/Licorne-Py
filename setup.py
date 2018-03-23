@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-from distutils.core import setup
+from setuptools import setup
+package_data = {"licorne": ["UI/*.ui",]}
+
 
 setup(
     name='licorne-py',
@@ -9,5 +11,7 @@ setup(
     author_email='hahnse@ornl.gov, saviciat@ornl.gov',
     url='https://github.com/neutrons/licorne-py',
     license='GPLv3+',
-    packages=['licorne']
+    scripts=["bin/Licorne"],
+    packages=['licorne'],
+    package_data=package_data,
 )
