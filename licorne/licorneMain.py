@@ -1,12 +1,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import sys, os, copy
+import yaml
 import numpy as np
 import matplotlib
+
 matplotlib.use('qt5agg')
 import licorne.layer
 import licorne.SampleModel
 import licorne.LayerList
 import licorne.data_manager_widget as data_manager_widget
+import licorne.data_model
 import licorne.utilities as lu
 import licorne.generateSublayers
 import licorne.reflection
@@ -49,9 +52,10 @@ class DataPlotWindow(QtWidgets.QMainWindow):
         for i in range(n_plots):
             ax = self.static_canvas.figure.add_subplot(n_rows, n_cols, i + 1)
             if data_model.datasets[i].R is not None:
-                ax.plot(data_model.datasets[i].Q,
-                        data_model.datasets[i].R * data_model.experiment_factor,
-                        color=lu.data_color(), label='exp')
+                ax.errorbar(data_model.datasets[i].Q,
+                            data_model.datasets[i].R * data_model.experiment_factor,
+                            data_model.datasets[i].E * data_model.experiment_factor,
+                            color=lu.data_color(), label='exp')
             if data_model.datasets[i].R_calc is not None:
                 ax.plot(data_model.datasets[i].Q,
                         data_model.datasets[i].R_calc * data_model.theory_factor + data_model.background,
@@ -77,24 +81,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.data_model = None
         self.selection = []
         self.figure = []
-        self.frw = None
-        self.data_manager = data_manager_widget.data_manager()
+        self.fit_results_widget = None
+
         sys.path.append(lu.tempdir().get_tempdir())
-        self.update_sample_model(sample_model)
+
+        self.data_manager = data_manager_widget.data_manager()
         self.resolution_selector = licorne.resolutionselector.resolutionselector()
+
+        self.update_sample_model(sample_model)
+
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(self.update_selection)
         self.layerselector_widget.listView.selectionModel().selectionChanged.connect(
             self.layerselector_widget.selectionChanged)
         self.layerselector_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.update_sample_model)
         self.layer_properties_widget.sampleModelChanged[licorne.SampleModel.SampleModel].connect(self.refresh)
         self.plot_widget.canvas.selectionChanged.connect(self.plot_set_selection)
+        self.data_manager.dataModelChanged.connect(self.update_data_model)
+        # menu items
         self.actionLoad_experiment_data.triggered.connect(self.load_experiment)
         self.actionLoad_layers.triggered.connect(self.load_layers)
         self.actionSave_layers.triggered.connect(self.save_layers)
+        self.actionSave_status.triggered.connect(self.save_state_dialog)
+        self.actionLoad_status.triggered.connect(self.load_state_dialog)
+
         self.pushButton_plot.clicked.connect(self.do_plot)
         self.pushButton_fit.clicked.connect(self.do_fit)
         self.plot_widget.updateSample(self.sample_model)
-        self.data_manager.dataModelChanged.connect(self.update_data_model)
+
         self.fit_thread = FitWorker()
         self.fit_thread.chiSquaredChanged[float].connect(self.update_fit)
         self.fit_thread.smChanged[minimizer.MinimizerResult].connect(self.update_from_fit_parameters)
@@ -102,26 +115,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def update_from_fit_parameters(self, pars):
         ma = ModelAdapter(self.sample_model)
         ma.update_model_from_params(pars.params)
-        output_string = 'Reduced chi square = {0}\n\n'.format(pars.redchi)
+        output_string = 'Reduced chi square = {0:.5f}\n\n'.format(pars.redchi)
         for parameter in pars.params:
             if pars.params[parameter].vary:
                 output_string += pars.params[parameter].name.replace('___', '.').replace('__', ' ')
-                output_string += ' {0}'.format(pars.params[parameter].value)
+                output_string += ' {0:.5}'.format(float(pars.params[parameter].value))
                 if pars.errorbars:
-                    output_string += ' +/- {0}'.format(pars.params[parameter].stderr)
-                output_string += ' (initial value: {0})\n'.format(pars.init_values[parameter])
-        print(output_string)
+                    output_string += ' +/- {0:.5}'.format(float(pars.params[parameter].stderr))
+                output_string += ' (initial value: {0:.5})\n'.format(float(pars.init_values[parameter]))
         self.refresh(self.sample_model)
-        self.frw = QtWidgets.QTextEdit(readOnly=True,minimumWidth=700)
-        self.frw.setText(output_string)
-        self.frw.show()
+        self.fit_results_widget = QtWidgets.QTextEdit(readOnly=True, minimumWidth=700)
+        self.fit_results_widget.setText(output_string)
+        self.fit_results_widget.show()
 
-    def update_fit(self,value):
+    def update_fit(self, value):
         self.pushButton_fit.setText('Fit chi={0:.4f}'.format(value))
 
-    def update_data_model(self,data_model):
-        self.data_model=data_model
+    def update_data_model(self, data_model):
+        self.data_model = data_model
+        self.update_data_figure()
 
+    def update_data_figure(self):
         if len(self.figure) > 0:
             if len(self.data_manager.data_model.datasets) > 0:
                 self.calculate_reflectivity()
@@ -152,7 +166,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except:
             pass
         try:
-            self.frw.close()
+            self.fit_results_widget.close()
         except:
             pass
         for f in self.figure:
@@ -179,21 +193,82 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def save_layers(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Layers",
-                                                            "", "YAML (*.yaml);;All Files (*)",
-                                                            options=options)
-        if fileName:
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Layers",
+                                                             "", "YAML (*.yaml);;All Files (*)",
+                                                             options=options)
+        if file_name:
             licorne.LayerList.save_layers(self.sample_model.layers,
                                           self.sample_model.incoming_media,
                                           self.sample_model.substrate,
-                                          fileName)
+                                          file_name)
+
+    def save_state_dialog(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save state",
+                                                             "", "YAML (*.yaml);;All Files (*)",
+                                                             options=options)
+        if file_name:
+            self.save_state_yaml(file_name)
+
+    def save_state_yaml(self, filename):
+        state = {}
+        if self.sample_model is not None:
+            state['model'] = dict(layers=self.sample_model.layers,
+                                  incoming_media=self.sample_model.incoming_media,
+                                  substrate=self.sample_model.substrate)
+        if self.data_model is not None:
+            state['experimental_data'] = dict(datasets=self.data_model.datasets,
+                                              background=self.data_model.background,
+                                              theory_factor=self.data_model.theory_factor,
+                                              experiment_factor=self.data_model.experiment_factor)
+        resolution_filename = os.path.join(lu.tempdir().get_tempdir(),'resolution.py')
+        with open(resolution_filename) as rf:
+            state['resolution'] = rf.read()
+        try:
+            with open(filename, 'w') as f:
+                yaml.dump(state, f)
+        except IOError:
+            pass  # TODO: error message
+
+    def load_state_dialog(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load state",
+                                                             "", "YAML (*.yaml);;All Files (*)",
+                                                             options=options)
+        if file_name and os.path.isfile(file_name):
+            self.load_state_yaml(file_name)
+
+    def load_state_yaml(self,file_name):
+        with open(file_name,'r') as f:
+            state=yaml.load(f)
+        resolution_filename = os.path.join(lu.tempdir().get_tempdir(),'resolution.py')
+        with open(resolution_filename,'w') as rf:
+            rf.write(state['resolution'])
+        if 'model' in state.keys():
+            temp_sample_model=licorne.SampleModel.SampleModel()
+            temp_sample_model.layers=state['model']['layers']
+            temp_sample_model.incoming_media=state['model']['incoming_media']
+            temp_sample_model.substrate=state['model']['substrate']
+            self.selection = []
+            self.refresh(temp_sample_model)
+
+        if 'experimental_data' in state.keys():
+            self.data_model=licorne.data_model.data_model()
+            self.data_model.datasets=state['experimental_data']['datasets']
+            self.data_model.background=state['experimental_data']['background']
+            self.data_model.experiment_factor=state['experimental_data']['experiment_factor']
+            self.data_model.theory_factor=state['experimental_data']['theory_factor']
+        self.update_data_figure()
+
 
     def load_layers(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Load Layers",
-                                                            "", "YAML (*.yaml);;All Files (*)",
-                                                            options=options)
+                                                             "", "YAML (*.yaml);;All Files (*)",
+                                                             options=options)
         if file_name:
             ll = licorne.LayerList.load_layers(file_name)
             sm = licorne.SampleModel.SampleModel()
@@ -236,49 +311,49 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fit_parameters_textEdit.setText('\n'.join(string_list))
 
     def calculate_reflectivity(self):
-        layers=[self.sample_model.incoming_media]+self.sample_model.layers+[self.sample_model.substrate]
+        layers = [self.sample_model.incoming_media] + self.sample_model.layers + [self.sample_model.substrate]
         sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
         for ds in self.data_model.datasets:
-            Q = ds.Q/2.
-            R = licorne.reflection.reflection(Q,sublayers)
-            pol_eff = np.ones(len(Q), dtype = np.complex128)
-            an_eff = np.ones(len(Q), dtype = np.complex128)
-            RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
+            Q = ds.Q / 2.
+            R = licorne.reflection.reflection(Q, sublayers)
+            pol_eff = np.ones(len(Q), dtype=np.complex128)
+            an_eff = np.ones(len(Q), dtype=np.complex128)
+            RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff, an_eff))
             import resolution
             sigma = resolution.resolution(Q)
             RRr = licorne.reflection.resolut(RR, Q, sigma, 3)
-            ds.R_calc=RRr
+            ds.R_calc = RRr
 
     def calculate_residuals(self, parameters):
         sm = copy.deepcopy(self.sample_model)
         ma = ModelAdapter(sm)
         ma.update_model_from_params(parameters)
-        layers = [sm.incoming_media]+sm.layers+[sm.substrate]
+        layers = [sm.incoming_media] + sm.layers + [sm.substrate]
         sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
-        chi_array=[]
+        chi_array = []
         for ds in self.data_model.datasets:
-            if ds.R is not None and len(ds.R)>1:
-                Q = ds.Q/2.
-                R = licorne.reflection.reflection(Q,sublayers)
-                pol_eff = np.ones(len(Q), dtype = np.complex128)
-                an_eff = np.ones(len(Q), dtype = np.complex128)
-                RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
+            if ds.R is not None and len(ds.R) > 1:
+                Q = ds.Q / 2.
+                R = licorne.reflection.reflection(Q, sublayers)
+                pol_eff = np.ones(len(Q), dtype=np.complex128)
+                an_eff = np.ones(len(Q), dtype=np.complex128)
+                RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff, an_eff))
                 import resolution
                 sigma = resolution.resolution(Q)
                 RRr = licorne.reflection.resolut(RR, Q, sigma, 1)
-                chi_array.append((RRr-ds.R)/ds.E)
-        chi=np.array(chi_array).ravel()
-        print((chi**2).mean())
+                chi_array.append((RRr - ds.R) / ds.E)
+        chi = np.array(chi_array).ravel()
+        print((chi ** 2).mean())
         return chi
 
     def do_fit(self):
         if self.data_model is None or len(self.data_model.datasets) == 0:
             print("Not enough data to fit. Please load more data")
             return
-        enough_data=False
+        enough_data = False
         for ds in self.data_model.datasets:
             if ds.R is not None and 1 < len(ds.R) == len(ds.E):
-                enough_data=True
+                enough_data = True
         if not enough_data:
             print("Could not find data to fit. Did you load any real data?")
             return
@@ -293,36 +368,36 @@ if __name__ == '__main__':
     smod = licorne.SampleModel.SampleModel()
     from licorne.layer import RoughnessModel
 
-    smod.substrate.nsld=3.533e-6
+    smod.substrate.nsld = 3.533e-6
     smod.substrate.roughness = 5.
     smod.substrate.roughness_model = RoughnessModel.TANH
     smod.substrate.sublayers = 3
 
-    layer_1 = licorne.layer.Layer(thickness = 40.129,
-                                  nsld_real = 2.6091e-6,
-                                  nsld_imaginary = -3e-8,
-                                  msld_phi = 0,
+    layer_1 = licorne.layer.Layer(thickness=40.129,
+                                  nsld_real=2.6091e-6,
+                                  nsld_imaginary=-3e-8,
+                                  msld_phi=0,
                                   msld_theta=90,
-                                  sublayers = 5,
-                                  roughness = 20,
-                                  roughness_model = RoughnessModel.TANH)
-    layer_2 = licorne.layer.Layer(thickness = 44.7345,
-                                  nsld_real = 3.5471e-6,
-                                  nsld_imaginary = -3e-8,
-                                  msld_phi = 0,
+                                  sublayers=5,
+                                  roughness=20,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_2 = licorne.layer.Layer(thickness=44.7345,
+                                  nsld_real=3.5471e-6,
+                                  nsld_imaginary=-3e-8,
+                                  msld_phi=0,
                                   msld_theta=90,
-                                  sublayers = 5,
-                                  roughness = 5,
-                                  roughness_model = RoughnessModel.TANH)
-    layer_3 = licorne.layer.Layer(thickness = 74.9724,
-                                  nsld_real = 2.7438e-6,
-                                  nsld_imaginary = -3e-8,
-                                  msld_rho = 8.3597e-007,
+                                  sublayers=5,
+                                  roughness=5,
+                                  roughness_model=RoughnessModel.TANH)
+    layer_3 = licorne.layer.Layer(thickness=74.9724,
+                                  nsld_real=2.7438e-6,
+                                  nsld_imaginary=-3e-8,
+                                  msld_rho=8.3597e-007,
                                   msld_theta=90,
-                                  msld_phi = 22.83,
-                                  sublayers = 5,
-                                  roughness = 5.7701,
-                                  roughness_model = RoughnessModel.TANH)
+                                  msld_phi=22.83,
+                                  sublayers=5,
+                                  roughness=5.7701,
+                                  roughness_model=RoughnessModel.TANH)
     layer_4 = licorne.layer.Layer(thickness=182.5007,
                                   nsld_real=2.3033e-6,
                                   nsld_imaginary=-3e-8,

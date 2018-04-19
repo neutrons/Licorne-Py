@@ -52,6 +52,7 @@ class PlotCanvas(FigureCanvas):
     selectionChanged=QtCore.pyqtSignal(int)
     def __init__(self, layers, function, parent=None):
         self.fig = Figure()
+        self.ax = self.fig.add_subplot(111)
         self.fig.patch.set_facecolor('white')
         self.corresponding=[]
         FigureCanvas.__init__(self, self.fig)
@@ -62,6 +63,7 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
         self.updateLF(layers,function)
         self.fig.canvas.mpl_connect('pick_event', self.onpick)
+
  
     def updateLF(self,newlayers,newfunction):
         self.data=newlayers
@@ -82,9 +84,8 @@ class PlotCanvas(FigureCanvas):
         return True
 
     def plot(self):
-        ax = self.figure.add_subplot(111)
-        sublayers,self.corresponding=plot_sublayers(ax, self.data, parameter=self.variable)
-        self.figure.tight_layout()
+        sublayers,self.corresponding=plot_sublayers(self.ax, self.data, parameter=self.variable)
+        self.fig.tight_layout()
         self.draw()
 
 
@@ -152,11 +153,13 @@ if __name__ == '__main__':
     app=QtWidgets.QApplication(sys.argv)
     mainForm=layerplot()
     from licorne.layer import RoughnessModel
-    newSample=[Layer(thickness=np.inf,nsld_real=1.5),
-               Layer(thickness=20.,nsld_real=1.),
-               Layer(thickness=25.,nsld_real=3.,roughness=5, roughness_model=RoughnessModel.TANH,sublayers=7),
-               Layer(thickness=30.,nsld_real=5.,msld_rho=7e-7,roughness=3, roughness_model=RoughnessModel.TANH,sublayers=7),
-               Layer(nsld_real=4.,thickness=np.inf)]
+    from licorne.SampleModel import SampleModel
+    newSample=SampleModel()
+    newSample.incoming_media=Layer(thickness=np.inf,nsld_real=1.5)
+    newSample.layers=[Layer(thickness=20.,nsld_real=1.),
+                      Layer(thickness=25.,nsld_real=3.,roughness=5, roughness_model=RoughnessModel.TANH,sublayers=7),
+                      Layer(thickness=30.,nsld_real=5.,msld_rho=7e-7,roughness=3, roughness_model=RoughnessModel.TANH,sublayers=7)]
+    newSample.substrate=Layer(nsld_real=4.,thickness=np.inf)
     mainForm.updateSample(newSample)
     mainForm.show()
     sys.exit(app.exec_())
