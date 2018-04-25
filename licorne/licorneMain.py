@@ -243,9 +243,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def load_state_yaml(self,file_name):
         with open(file_name,'r') as f:
             state=yaml.load(f)
-        resolution_filename = os.path.join(lu.tempdir().get_tempdir(),'resolution.py')
-        with open(resolution_filename,'w') as rf:
-            rf.write(state['resolution'])
+
         if 'model' in state.keys():
             temp_sample_model=licorne.SampleModel.SampleModel()
             temp_sample_model.layers=state['model']['layers']
@@ -260,8 +258,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.data_model.background=state['experimental_data']['background']
             self.data_model.experiment_factor=state['experimental_data']['experiment_factor']
             self.data_model.theory_factor=state['experimental_data']['theory_factor']
-        self.update_data_figure()
+            self.data_manager.update_data_model(self.data_model)
 
+        resolution_filename = os.path.join(lu.tempdir().get_tempdir(),'CustomResolution.py')
+        with open(resolution_filename,'w') as rf:
+            rf.write(state['resolution'])
+        self.data_manager.resolution_dialog.comboBox_resolution_mode.setCurrentIndex(2)  # custom
+        self.data_manager.resolution_dialog.resolution_mode_changed('Custom')
+
+        self.update_data_figure()
 
     def load_layers(self):
         options = QtWidgets.QFileDialog.Options()

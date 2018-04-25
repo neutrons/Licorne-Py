@@ -3,16 +3,17 @@ from PyQt5 import QtCore
 import os, copy
 import licorne.experimental_data
 
+
 class data_model(QtCore.QAbstractListModel):
     def __init__(self, *args, **kwargs):
         '''
         Create a data model
         '''
         QtCore.QAbstractListModel.__init__(self, *args, **kwargs)
-        self.datasets=[]
-        self.background=0.0
-        self.theory_factor=1.0
-        self.experiment_factor=1.0
+        self.datasets = []
+        self.background = 0.0
+        self.theory_factor = 1.0
+        self.experiment_factor = 1.0
 
     def __deepcopy__(self, memodict={}):
         cls = self.__class__
@@ -22,6 +23,14 @@ class data_model(QtCore.QAbstractListModel):
         result.theory_factor = self.theory_factor
         result.experiment_factor = self.experiment_factor
         return result
+
+    def set_model(self, other):
+        self.beginResetModel()
+        self.datasets = copy.deepcopy(other.datasets)
+        self.background = other.background
+        self.theory_factor = other.theory_factor
+        self.experiment_factor = other.experiment_factor
+        self.endResetModel()
 
     def rowCount(self, parent=None):
         '''
@@ -42,19 +51,19 @@ class data_model(QtCore.QAbstractListModel):
             return QtCore.QVariant()
         return QtCore.QVariant(display_names[index.row()])
 
-    def addItem(self,item):
+    def addItem(self, item):
         '''
         UI and data related
         add a single dataset at the end of the list
         '''
-        position=len(self.datasets)
-        if not isinstance(item,licorne.experimental_data.experimental_data):
+        position = len(self.datasets)
+        if not isinstance(item, licorne.experimental_data.experimental_data):
             return
         self.beginInsertRows(QtCore.QModelIndex(), position, position)
         self.datasets.insert(position, item)
         self.endInsertRows()
 
-    def delItem(self,position):
+    def delItem(self, position):
         '''
         UI and data related
         delete a single dataset.
@@ -65,5 +74,3 @@ class data_model(QtCore.QAbstractListModel):
             self.beginRemoveRows(QtCore.QModelIndex(), position, position)
             del self.datasets[position]
             self.endRemoveRows()
-
-

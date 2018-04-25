@@ -16,7 +16,7 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         QtWidgets.QWidget.__init__(self, parent=parent, *args)
         Ui_LayerProperties.__init__(self)
         self.setupUi(self)
-        self.sample_model=None
+        self.sample_model=SampleModel()
         self.layer_list = []
         self.selection = []
         self.ties_nsld_real = []
@@ -39,7 +39,7 @@ class LayerPropertiesWidget(QtWidgets.QWidget, Ui_LayerProperties):
         self.roughness_model_comboBox.addItems([r.name for r in RoughnessModel])
 
     def set_layer_list(self, new_sample_model):
-        self.sample_model=new_sample_model
+        self.sample_model.set_model(new_sample_model)
         self.layer_list = [l for l in self.sample_model.layers]
         self.layer_list.insert(0,self.sample_model.incoming_media)
         self.layer_list.append(self.sample_model.substrate)

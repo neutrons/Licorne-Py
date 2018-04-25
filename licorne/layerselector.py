@@ -14,12 +14,13 @@ class layerselector(QtWidgets.QWidget, Ui_layerselector):
         QtWidgets.QWidget.__init__(self,*args)
         Ui_layerselector.__init__(self)
         self.setupUi(self)
+        self.sample_model=SampleModel()
         self.set_sample_model(sample_model)
         self.listView.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.invalidSelection[str].connect(self.module_logger)
 
     def set_sample_model(self,sample_model):
-        self.sample_model=sample_model
+        self.sample_model.set_model(sample_model)
         self.sample_model.setParent(self)
         self.listView.setModel(self.sample_model)
 

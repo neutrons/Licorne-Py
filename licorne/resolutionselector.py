@@ -51,6 +51,7 @@ class resolutionselector(QtWidgets.QWidget,Ui_resolution):
         self.canvas.setGeometry(self.widget_plot_area.rect())
 
     def resolution_mode_changed(self,res):
+        self.resolution_mode=res
         if res=="TOF":
             #copy the tof resolution to the temp directory as resolution.py
             shutil.copy(os.path.join(os.path.dirname(__file__),'DefaultResolutionTOF.py'),

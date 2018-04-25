@@ -46,6 +46,15 @@ class data_manager(QtWidgets.QWidget,Ui_data_manager):
         self.resolution_dialog = resolutionselector(parent=None, Qvec=None)
         self.resolution_dialog.resolution_changed.connect(self.resolution_changed)
 
+    def update_data_model(self,dm):
+        self.lineEdit_background.setText(str(dm.background))
+        self.doubleSpinBox_experiment_norm.setValue(dm.experiment_factor)
+        self.doubleSpinBox_theory_norm.setValue(dm.theory_factor)
+        self.data_model.set_model(dm)
+        self.data_model.setParent(self)
+        self.listView.setModel(self.data_model)
+
+
     def load_resolution(self):
         q_array = None
         try:

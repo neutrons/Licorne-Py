@@ -45,6 +45,13 @@ class SampleModel(QtCore.QAbstractListModel):
         result.layers = copy.deepcopy(self.layers)
         return result
 
+    def set_model(self, other):
+        self.beginResetModel()
+        self.layers = copy.deepcopy(other.layers)
+        self.substrate = copy.deepcopy(other.substrate)
+        self.incoming_media = copy.deepcopy(other.incoming_media)
+        self.endResetModel()
+
     def rowCount(self, parent=None):
         """
         UI related
