@@ -326,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff, an_eff))
             import resolution
             sigma = resolution.resolution(Q)
-            RRr = licorne.reflection.resolut(RR, Q, sigma, 3)
+            RRr = licorne.reflection.resolut(RR, Q, sigma, 4)
             ds.R_calc = RRr
 
     def calculate_residuals(self, parameters):
@@ -345,7 +345,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff, an_eff))
                 import resolution
                 sigma = resolution.resolution(Q)
-                RRr = licorne.reflection.resolut(RR, Q, sigma, 1)
+                RRr = licorne.reflection.resolut(RR, Q, sigma, 4)
                 chi_array.append((RRr - ds.R) / ds.E)
         chi = np.array(chi_array).ravel()
         print((chi ** 2).mean())
