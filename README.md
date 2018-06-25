@@ -7,3 +7,8 @@
 Port of LICORNE program to Python
 
 
+# SNS analysis computer installation
+
+```export PATH="/SNS/software/miniconda2/bin:$PATH"```
+```source activate licorne```
+```python setup.py install```
