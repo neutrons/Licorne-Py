@@ -45,8 +45,8 @@ class FitWorker(QtCore.QThread):
                 an_eff = np.ones(len(q), dtype = np.complex128)
                 rr = np.real(spin_av(r, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff,an_eff))
                 sigma = ds.sigmaQ
-                rrr = resolut(rr, q, sigma, 4)
-                chi_array.append((rrr-ds.R)/ds.E)
+                rrr = resolut(rr, q, sigma, 4)*self.data_model.theory_factor+self.data_model.background
+                chi_array.append((rrr/self.data_model.experiment_factor-ds.R)/ds.E)
         chi = np.array(chi_array).ravel()
         self.chiSquaredChanged.emit((chi**2).mean())
         return chi

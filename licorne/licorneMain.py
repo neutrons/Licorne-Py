@@ -345,8 +345,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 RR = np.real(licorne.reflection.spin_av(R, ds.pol_Polarizer, ds.pol_Analyzer, pol_eff, an_eff))
                 import resolution
                 sigma = resolution.resolution(Q)
-                RRr = licorne.reflection.resolut(RR, Q, sigma, 4)
-                chi_array.append((RRr - ds.R) / ds.E)
+                RRr = licorne.reflection.resolut(RR, Q, sigma, 4)*self.data_model.theory_factor+self.data_model.background
+                chi_array.append((RRr/self.data_model.experiment_factor - ds.R) / ds.E)
         chi = np.array(chi_array).ravel()
         print((chi ** 2).mean())
         return chi
