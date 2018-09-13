@@ -1,7 +1,18 @@
 #pylint: disable=too-many-branches, too-many-lines, line-too-long
+"""
+    Transcription into code of Toperverg off-specular write-up.
+    Implementation note:
+        At this point we are not trying to be clever. We just want a quick
+        run-through to understand what comes out and catch inconsistencies.
+"""
 import numpy as np
+from numpy import linalg
+
 
 class Layer(object):
+    """
+        Sample layer
+    """
     thickness = 100
     rho = 1
     irho = 0
@@ -20,6 +31,10 @@ class Layer(object):
     e_i_minus = None
     b = None
 
+    # Debye-Waller (roughness) matrices
+    w_ir = None
+    w_it = None
+
     def initialize(self, n_alpha_i, n_wl):
         self.p_i_plus = np.zeros([n_alpha_i, n_wl])
         self.p_i_minus = np.zeros([n_alpha_i, n_wl])
@@ -28,6 +43,8 @@ class Layer(object):
         self.e_i_plus = np.zeros([n_alpha_i, n_wl])
         self.e_i_minus = np.zeros([n_alpha_i, n_wl])
         self.b = np.zeros(3)
+        self.p_i_matrix = n_alpha_i*[n_wl*[0]]
+        self.e_i_matrix = n_alpha_i*[n_wl*[0]]
 
     def rho_plus(self):
         # 1.5
@@ -88,9 +105,61 @@ class Amplitude(object):
                     layer.e_i_plus[i_alpha_i][i_wl] = np.exp(1j * layer.phi_i_plus[i_alpha_i][i_wl])
                     layer.e_i_minus[i_alpha_i][i_wl] = np.exp(1j * layer.phi_i_minus[i_alpha_i][i_wl])
 
-                    # 1.16
-                    p_i = np.zeros([2,2])
-                    p_i[0][0] = layer.p_i_plus[i_alpha_i][i_wl] * (1 + layer.b[0]) + layer.p_i_minus[i_alpha_i][i_wl] * (1 - layer.b[0])
+                    # 1.15, 1.16
+                    p_i = build_spin_matrix(layer.p_i_plus[i_alpha_i][i_wl], layer.p_i_minus[i_alpha_i][i_wl], layer.b)
+
+                    # 1.17 - invert p_i
+                    p_i_inv = linalg.inv(p_i)
+
+                    # For some reason the p matrices are defined with a factor 1/2
+                    p_i = p_i / 2.0
+                    p_i_inv = p_i_inv / 2.0
+                    layer.p_i_matrix[i_alpha_i][i_wl] = p_i
+
+                    # 1.18, 1.19
+                    e_i = build_spin_matrix(layer.e_i_plus[i_alpha_i][i_wl], layer.e_i_minus[i_alpha_i][i_wl], layer.b)
+                    layer.e_i_matrix[i_alpha_i][i_wl] = e_i
+
+                    # 1.20, 1.21 -  Roughness
+                    # Here we should be careful with the first and last layer
+                    # For the reflected component, skip the last layer
+                    if i < len(self.layers) - 2:
+                        w_ir = 2.0 * self.layers[i+1].roughness**2 * np.cross(p_i, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                    # For the transmission component, skip the first layer
+                    if i > 0:
+                        w_it = 0.5 * layer.roughness**2 * (self.layers[i-1].p_i_matrix[i_alpha_i][i_wl] - p_i)**2
+
+                    # 1.22 - Roughness eigenvalues
+                    w_ir_plus = 0.5 * ((w_ir[0][0] + w_ir[1][1]) + np.sqrt((w_ir[0][0] - w_ir[1][1])**2 + 4.0 * w_ir[0][1] * w_ir[1][0]))
+                    w_ir_minus = 0.5 * ((w_ir[0][0] + w_ir[1][1]) - np.sqrt((w_ir[0][0] - w_ir[1][1])**2 + 4.0 * w_ir[0][1] * w_ir[1][0]))
+                    w_it_plus = 0.5 * ((w_it[0][0] + w_it[1][1]) + np.sqrt((w_it[0][0] - w_it[1][1])**2 + 4.0 * w_it[0][1] * w_it[1][0]))
+                    w_it_minus = 0.5 * ((w_it[0][0] + w_it[1][1]) - np.sqrt((w_it[0][0] - w_it[1][1])**2 + 4.0 * w_it[0][1] * w_it[1][0]))
+
+                    # 1.23 Would be nice to have this in matrix notation
+                    b_i_r = np.zeros(3)
+                    b_i_r[0] = w_ir[0][0] - w_ir[1][1]
+                    b_i_r[1] = w_ir[0][1] + w_ir[1][0]
+                    b_i_r[2] = 1j * w_ir[0][1] - w_ir[1][0]
+                    b_i_r = b_i_r / (w_ir_plus - w_ir_minus)
+
+                    b_i_t = np.zeros(3)
+                    b_i_t[0] = w_it[0][0] - w_it[1][1]
+                    b_i_t[1] = w_it[0][1] + w_it[1][0]
+                    b_i_t[2] = 1j * w_it[0][1] - w_it[1][0]
+                    b_i_t = b_i_t / (w_it_plus - w_it_minus)
+
+                    # 1.24 Eigenvalues of D-W exponents
 
 
-
+def build_spin_matrix(p_plus, p_minus, b_vector):
+    """
+        Build a spin matrix based on the given components and Pauli matrices.
+        #TODO: This probably simplifies to something obvious.
+        This appears in 1.15, 1.18
+    """
+    p_matrix = np.zeros([2,2])
+    p_matrix[0][0] = p_plus * (1 + b_vector[0]) + p_minus * (1 - b_vector[0])
+    p_matrix[0][1] = (p_plus - p_minus) * (b_vector[1] - 1j * b_vector[2])
+    p_matrix[1][0] = (p_plus - p_minus) * (b_vector[1] + 1j * b_vector[2])
+    p_matrix[1][1] = p_plus * (1 - b_vector[0]) + p_minus * (1 + b_vector[0])
+    return p_matrix
