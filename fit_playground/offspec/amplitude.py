@@ -42,9 +42,20 @@ class Layer(object):
         self.phi_i_minus = np.zeros([n_alpha_i, n_wl])
         self.e_i_plus = np.zeros([n_alpha_i, n_wl])
         self.e_i_minus = np.zeros([n_alpha_i, n_wl])
+        self.e_ir_plus = np.zeros([n_alpha_i, n_wl])
+        self.e_ir_minus = np.zeros([n_alpha_i, n_wl])
+        self.e_it_plus = np.zeros([n_alpha_i, n_wl])
+        self.e_it_minus = np.zeros([n_alpha_i, n_wl])
         self.b = np.zeros(3)
         self.p_i_matrix = n_alpha_i*[n_wl*[0]]
+        self.p_i_inv_matrix = n_alpha_i*[n_wl*[0]]
         self.e_i_matrix = n_alpha_i*[n_wl*[0]]
+        self.e_ir_matrix = n_alpha_i*[n_wl*[0]]
+        self.e_it_matrix = n_alpha_i*[n_wl*[0]]
+        self.a_i_matrix = n_alpha_i*[n_wl*[0]]
+        self.b_i_matrix = n_alpha_i*[n_wl*[0]]
+        self.r_i_matrix = n_alpha_i*[n_wl*[np.eye(2)]]
+        self.t_i_matrix = n_alpha_i*[n_wl*[np.eye(2)]]
 
     def rho_plus(self):
         # 1.5
@@ -115,19 +126,22 @@ class Amplitude(object):
                     p_i = p_i / 2.0
                     p_i_inv = p_i_inv / 2.0
                     layer.p_i_matrix[i_alpha_i][i_wl] = p_i
+                    layer.p_i_inv_matrix[i_alpha_i][i_wl] = p_i_inv
 
                     # 1.18, 1.19
                     e_i = build_spin_matrix(layer.e_i_plus[i_alpha_i][i_wl], layer.e_i_minus[i_alpha_i][i_wl], layer.b)
                     layer.e_i_matrix[i_alpha_i][i_wl] = e_i
 
-                    # 1.20, 1.21 -  Roughness
-                    # Here we should be careful with the first and last layer
-                    # For the reflected component, skip the last layer
+                # 1.20, 1.21 -  Roughness
+                # Here we should be careful with the first and last layer
+                # For the reflected component, skip the last layer
+                # --> We need to have computed all the p_i values before iterating
+                for i, layer in enumerate(self.layers):
                     if i < len(self.layers) - 2:
-                        w_ir = 2.0 * self.layers[i+1].roughness**2 * np.cross(p_i, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                        w_ir = 2.0 * self.layers[i+1].roughness**2 * np.cross(self.layers[i].p_i_matrix[i_alpha_i][i_wl], self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
                     # For the transmission component, skip the first layer
                     if i > 0:
-                        w_it = 0.5 * layer.roughness**2 * (self.layers[i-1].p_i_matrix[i_alpha_i][i_wl] - p_i)**2
+                        w_it = 0.5 * layer.roughness**2 * (self.layers[i-1].p_i_matrix[i_alpha_i][i_wl] - self.layers[i].p_i_matrix[i_alpha_i][i_wl])**2
 
                     # 1.22 - Roughness eigenvalues
                     w_ir_plus = 0.5 * ((w_ir[0][0] + w_ir[1][1]) + np.sqrt((w_ir[0][0] - w_ir[1][1])**2 + 4.0 * w_ir[0][1] * w_ir[1][0]))
@@ -149,6 +163,44 @@ class Amplitude(object):
                     b_i_t = b_i_t / (w_it_plus - w_it_minus)
 
                     # 1.24 Eigenvalues of D-W exponents
+                    layer.e_ir_plus = np.exp(-w_ir_plus)
+                    layer.e_ir_minus = np.exp(-w_ir_minus)
+                    layer.e_it_plus = np.exp(-w_it_plus)
+                    layer.e_it_minus = np.exp(-w_it_minus)
+
+                    # 1.25, 1.26
+                    e_ir = build_spin_matrix(layer.e_ir_plus, layer.e_ir_minus, b_i_r) / 2.0
+                    e_it = build_spin_matrix(layer.e_it_plus, layer.e_it_minus, b_i_t) / 2.0
+                    layer.e_ir_matrix[i_alpha_i][i_wl] = e_ir
+                    layer.e_it_matrix[i_alpha_i][i_wl] = e_it
+
+                    # 1.27 - recursion
+                    # Here we should be careful with the first and last layer
+                    # For the reflected component, skip the last layer
+                    if i < len(self.layers) - 2:
+                        _a_i = np.eye(2) - np.cross(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                        layer.a_i_matrix[i_alpha_i][i_wl] = np.cross(_a_i, e_ir)
+                        layer.b_i_matrix[i_alpha_i][i_wl] = np.eye(2) + np.cross(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+
+                # 1.28 (part of init), 1.29
+                for i in range(len(self.layers)-2, -1, -1):
+                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
+                    _partial_b = self.layers[i].b_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].a_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
+                    _partial_b = linalg.inv(_partial_b)
+                    _r_i = np.cross(_partial_b, self.layers[i].e_i_matrix[i_alpha_i][i_wl])
+                    _r_i = np.cross(_partial_a, _r_i)
+                    _r_i = np.cross(self.layers[i].e_i_matrix[i_alpha_i][i_wl], _r_i)
+                    self.layers[i].r_i_matrix[i_alpha_i][i_wl] = _r_i
+
+                # 1.30, 1.31
+                for i in range(1, len(self.layers)-1):
+                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
+                    _partial_a = linalg.inv(_partial_a)
+
+                    t_i = np.cross(self.layers[i].t_i_matrix[i_alpha_i][i_wl], self.layers[i].e_it_matrix[i_alpha_i][i_wl])
+                    t_i = np.cross(self.layers[i].e_i_matrix[i_alpha_i][i_wl], t_i)
+                    t_i = 2.0 * np.cross(_partial_a, t_i)
+                    self.layers[i+1].t_i_matrix[i_alpha_i][i_wl] = t_i
 
 
 def build_spin_matrix(p_plus, p_minus, b_vector):
