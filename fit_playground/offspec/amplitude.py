@@ -8,6 +8,7 @@
 import numpy as np
 from numpy import linalg
 
+DEBUG = True
 
 class Layer(object):
     """
@@ -35,27 +36,34 @@ class Layer(object):
     w_ir = None
     w_it = None
 
+    def __init__(self, thickness, rho, roughness, irho=0, mrho=0):
+        self.thickness = thickness
+        self.rho = rho
+        self.roughness = roughness
+        self.irho = irho
+        self.mrho = mrho
+
     def initialize(self, n_alpha_i, n_wl):
-        self.p_i_plus = np.zeros([n_alpha_i, n_wl])
-        self.p_i_minus = np.zeros([n_alpha_i, n_wl])
-        self.phi_i_plus = np.zeros([n_alpha_i, n_wl])
-        self.phi_i_minus = np.zeros([n_alpha_i, n_wl])
-        self.e_i_plus = np.zeros([n_alpha_i, n_wl])
-        self.e_i_minus = np.zeros([n_alpha_i, n_wl])
-        self.e_ir_plus = np.zeros([n_alpha_i, n_wl])
-        self.e_ir_minus = np.zeros([n_alpha_i, n_wl])
-        self.e_it_plus = np.zeros([n_alpha_i, n_wl])
-        self.e_it_minus = np.zeros([n_alpha_i, n_wl])
-        self.b = np.zeros(3)
-        self.p_i_matrix = n_alpha_i*[n_wl*[0]]
-        self.p_i_inv_matrix = n_alpha_i*[n_wl*[0]]
-        self.e_i_matrix = n_alpha_i*[n_wl*[0]]
-        self.e_ir_matrix = n_alpha_i*[n_wl*[0]]
-        self.e_it_matrix = n_alpha_i*[n_wl*[0]]
-        self.a_i_matrix = n_alpha_i*[n_wl*[0]]
-        self.b_i_matrix = n_alpha_i*[n_wl*[0]]
-        self.r_i_matrix = n_alpha_i*[n_wl*[np.eye(2)]]
-        self.t_i_matrix = n_alpha_i*[n_wl*[np.eye(2)]]
+        self.p_i_plus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.p_i_minus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.phi_i_plus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.phi_i_minus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_i_plus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_i_minus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_ir_plus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_ir_minus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_it_plus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.e_it_minus = np.zeros([n_alpha_i, n_wl], dtype=np.complex)
+        self.b = np.asarray([0, 0, 1]) # np.zeros(3, dtype=np.complex)
+        self.p_i_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.p_i_inv_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.e_i_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.e_ir_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.e_it_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.a_i_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.b_i_matrix = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
+        self.r_i_matrix = n_alpha_i*[n_wl*[np.eye(2, dtype=np.complex)]]
+        self.t_i_matrix = n_alpha_i*[n_wl*[np.eye(2, dtype=np.complex)]]
 
     def rho_plus(self):
         # 1.5
@@ -76,22 +84,29 @@ class Layer(object):
 
 class Amplitude(object):
     """ Scattering amplitude """
-    wl_min = 1
-    wl_max = 10
-    n_wl = 10
-
-    alpha_i_min = .005
-    alpha_i_max = 5
-    n_alpha_i = 10
-
-    def __init__(self):
+    def __init__(self, layers, p_i, p_f, n_alpha_i=5, n_wl=30, wl_min=1, wl_max=15, alpha_i_min=0.005, alpha_i_max=5):
         # Ordered list of layers
-        self.layers = []
+        self.layers = layers
+        self.n_alpha_i = n_alpha_i
+        self.n_wl = n_wl
+        self.wl_min = wl_min
+        self.wl_max = wl_max
+        self.alpha_i_min = alpha_i_min * np.pi / 180.0
+        self.alpha_i_max = alpha_i_max * np.pi / 180.0
 
-        _p_i0 = np.zeros([self.n_alpha_i, self.n_wl])
+        self.p_i = np.asarray(p_i)
+        self.p_f = np.asarray(p_f)
+        self.R = np.zeros([self.n_alpha_i, self.n_wl], dtype=np.complex)
+
         for i, layer in enumerate(self.layers):
             layer.initialize(self.n_alpha_i, self.n_wl)
 
+    def log(self, msg):
+        if DEBUG:
+            print(msg)
+
+    def __call__(self):
+        _p_i0 = np.zeros([self.n_alpha_i, self.n_wl], dtype=np.complex)
         # 1.8
         for i_wl in range(self.n_wl):
             _wl = self.wl_min + i_wl * (self.wl_max - self.wl_min) / (self.n_wl - 1)
@@ -100,10 +115,12 @@ class Amplitude(object):
             for i_alpha_i in range(self.n_alpha_i):
                 # 1.10
                 _alpha_i = self.alpha_i_min + i_alpha_i * (self.alpha_i_max - self.alpha_i_min) / (self.n_alpha_i - 1)
-                # 1.11
-                _p_i0[i_alpha_i][i_wl] = 2.0 * np.pi * np.sin(_alpha_i / _wl)
+                # 1.11 CHECK
+                #_p_i0[i_alpha_i][i_wl] = 2.0 * np.pi * np.sin(_alpha_i / _wl)   as written
+                _p_i0[i_alpha_i][i_wl] = 2.0 * np.pi * np.sin(_alpha_i) / _wl
 
                 for i, layer in enumerate(self.layers):
+                    self.log("Angle: %s   Wl: %s   p_i0: %s" % (_alpha_i, _wl, _p_i0[i_alpha_i][i_wl]))
                     # 1.12
                     layer.p_i_plus[i_alpha_i][i_wl] = np.sqrt(_p_i0[i_alpha_i][i_wl]**2 - layer.p_c_plus_sq())
                     layer.p_i_minus[i_alpha_i][i_wl] = np.sqrt(_p_i0[i_alpha_i][i_wl]**2 - layer.p_c_minus_sq())
@@ -137,8 +154,14 @@ class Amplitude(object):
                 # For the reflected component, skip the last layer
                 # --> We need to have computed all the p_i values before iterating
                 for i, layer in enumerate(self.layers):
-                    if i < len(self.layers) - 2:
-                        w_ir = 2.0 * self.layers[i+1].roughness**2 * np.cross(self.layers[i].p_i_matrix[i_alpha_i][i_wl], self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                    self.log("DW %s" % i)
+                    w_ir = np.zeros([2,2], dtype=np.complex)
+                    w_it = np.zeros([2,2], dtype=np.complex)
+                    if i < len(self.layers) - 1:
+                        self.log(str(self.layers[i].p_i_matrix[i_alpha_i][i_wl]))
+                        self.log(str(self.layers[i+1].p_i_matrix[i_alpha_i][i_wl]))
+                        w_ir = 2.0 * self.layers[i+1].roughness**2 * np.matmul(self.layers[i].p_i_matrix[i_alpha_i][i_wl], self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                        self.log(str(w_ir.shape))
                     # For the transmission component, skip the first layer
                     if i > 0:
                         w_it = 0.5 * layer.roughness**2 * (self.layers[i-1].p_i_matrix[i_alpha_i][i_wl] - self.layers[i].p_i_matrix[i_alpha_i][i_wl])**2
@@ -150,13 +173,13 @@ class Amplitude(object):
                     w_it_minus = 0.5 * ((w_it[0][0] + w_it[1][1]) - np.sqrt((w_it[0][0] - w_it[1][1])**2 + 4.0 * w_it[0][1] * w_it[1][0]))
 
                     # 1.23 Would be nice to have this in matrix notation
-                    b_i_r = np.zeros(3)
+                    b_i_r = np.zeros(3, dtype=np.complex)
                     b_i_r[0] = w_ir[0][0] - w_ir[1][1]
                     b_i_r[1] = w_ir[0][1] + w_ir[1][0]
                     b_i_r[2] = 1j * w_ir[0][1] - w_ir[1][0]
                     b_i_r = b_i_r / (w_ir_plus - w_ir_minus)
 
-                    b_i_t = np.zeros(3)
+                    b_i_t = np.zeros(3, dtype=np.complex)
                     b_i_t[0] = w_it[0][0] - w_it[1][1]
                     b_i_t[1] = w_it[0][1] + w_it[1][0]
                     b_i_t[2] = 1j * w_it[0][1] - w_it[1][0]
@@ -178,30 +201,68 @@ class Amplitude(object):
                     # Here we should be careful with the first and last layer
                     # For the reflected component, skip the last layer
                     if i < len(self.layers) - 2:
-                        _a_i = np.eye(2) - np.cross(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
-                        layer.a_i_matrix[i_alpha_i][i_wl] = np.cross(_a_i, e_ir)
-                        layer.b_i_matrix[i_alpha_i][i_wl] = np.eye(2) + np.cross(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                        _a_i = np.eye(2) - np.matmul(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
+                        layer.a_i_matrix[i_alpha_i][i_wl] = np.matmul(_a_i, e_ir)
+                        layer.b_i_matrix[i_alpha_i][i_wl] = np.eye(2) + np.matmul(self.layers[i].p_i_inv_matrix, self.layers[i+1].p_i_matrix[i_alpha_i][i_wl])
 
                 # 1.28 (part of init), 1.29
                 for i in range(len(self.layers)-2, -1, -1):
-                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
-                    _partial_b = self.layers[i].b_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].a_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
-                    _partial_b = linalg.inv(_partial_b)
-                    _r_i = np.cross(_partial_b, self.layers[i].e_i_matrix[i_alpha_i][i_wl])
-                    _r_i = np.cross(_partial_a, _r_i)
-                    _r_i = np.cross(self.layers[i].e_i_matrix[i_alpha_i][i_wl], _r_i)
-                    self.layers[i].r_i_matrix[i_alpha_i][i_wl] = _r_i
+                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.matmul(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
+                    _partial_b = self.layers[i].b_i_matrix[i_alpha_i][i_wl] + np.matmul(self.layers[i].a_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
+                    try:
+                        _partial_b = linalg.inv(_partial_b)
+                        _r_i = np.matmul(_partial_b, self.layers[i].e_i_matrix[i_alpha_i][i_wl])
+                        _r_i = np.matmul(_partial_a, _r_i)
+                        _r_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], _r_i)
+                        self.layers[i].r_i_matrix[i_alpha_i][i_wl] = _r_i
+                    except:
+                        print("1.28 OOPS! Layer %s" % i)
 
                 # 1.30, 1.31
-                for i in range(1, len(self.layers)-1):
-                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.cross(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
-                    _partial_a = linalg.inv(_partial_a)
+                for i in range(len(self.layers)-1):
+                    _partial_a = self.layers[i].a_i_matrix[i_alpha_i][i_wl] + np.matmul(self.layers[i].b_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
 
-                    t_i = np.cross(self.layers[i].t_i_matrix[i_alpha_i][i_wl], self.layers[i].e_it_matrix[i_alpha_i][i_wl])
-                    t_i = np.cross(self.layers[i].e_i_matrix[i_alpha_i][i_wl], t_i)
-                    t_i = 2.0 * np.cross(_partial_a, t_i)
-                    self.layers[i+1].t_i_matrix[i_alpha_i][i_wl] = t_i
+                    try:
+                        _partial_a = linalg.inv(_partial_a)
 
+                        t_i = np.matmul(self.layers[i].t_i_matrix[i_alpha_i][i_wl], self.layers[i].e_it_matrix[i_alpha_i][i_wl])
+                        t_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], t_i)
+                        t_i = 2.0 * np.matmul(_partial_a, t_i)
+                        self.layers[i+1].t_i_matrix[i_alpha_i][i_wl] = t_i
+                    except:
+                        print("1.30 OOPS! Layer %s" % i)
+                    r_amplitude_i = np.matmul(self.layers[i].r_i_matrix[i_alpha_i][i_wl], self.layers[i].t_i_matrix[i_alpha_i][i_wl])
+
+                # 1.32
+                N = len(self.layers)-1
+                r_amplitude_N = np.matmul(self.layers[N].r_i_matrix[i_alpha_i][i_wl], self.layers[N].t_i_matrix[i_alpha_i][i_wl])
+
+                # 1.33
+                r_i_plus_0 = np.asarray(np.matrix(r_amplitude_N).H)
+                print("H: %s" % str(r_i_plus_0))
+
+                # 1.34
+                _r = np.matmul(self.rho_i(), r_i_plus_0)
+                _r = np.matmul(r_amplitude_N, _r)
+                _r = np.matmul(self.rho_f(), _r)
+
+                self.R[i_alpha_i][i_wl] = _r[0][0] + _r[1][1]
+
+    def rho_i(self):
+        _matrix = np.zeros([2,2], dtype=np.complex)
+        _matrix[0][0] = 1.0 + self.p_i[2]
+        _matrix[0][1] = self.p_i[0] - 1j * self.p_i[1]
+        _matrix[1][0] = self.p_i[0] + 1j * self.p_i[1]
+        _matrix[1][1] = 1.0 - self.p_i[2]
+        return 0.5 * _matrix
+
+    def rho_f(self):
+        _matrix = np.zeros([2,2], dtype=np.complex)
+        _matrix[0][0] = 1.0 + self.p_i[2]
+        _matrix[0][1] = self.p_i[0] - 1j * self.p_i[1]
+        _matrix[1][0] = self.p_i[0] + 1j * self.p_i[1]
+        _matrix[1][1] = 1.0 - self.p_i[2]
+        return 0.5 * _matrix
 
 def build_spin_matrix(p_plus, p_minus, b_vector):
     """
@@ -209,9 +270,19 @@ def build_spin_matrix(p_plus, p_minus, b_vector):
         #TODO: This probably simplifies to something obvious.
         This appears in 1.15, 1.18
     """
-    p_matrix = np.zeros([2,2])
+    p_matrix = np.zeros([2,2], dtype=np.complex)
     p_matrix[0][0] = p_plus * (1 + b_vector[0]) + p_minus * (1 - b_vector[0])
     p_matrix[0][1] = (p_plus - p_minus) * (b_vector[1] - 1j * b_vector[2])
     p_matrix[1][0] = (p_plus - p_minus) * (b_vector[1] + 1j * b_vector[2])
     p_matrix[1][1] = p_plus * (1 - b_vector[0]) + p_minus * (1 + b_vector[0])
     return p_matrix
+
+if __name__ == "__main__":
+    layers = []
+    layers.append(Layer(1000, 0, 0))    # Air
+    layers.append(Layer(250, 8e-6, 0))
+    layers.append(Layer(1000, 2.07e-6, 0)) # Si substrate
+
+    amplitude = Amplitude(layers=layers, p_i=[0,0,1], p_f=[0,0,1])
+    amplitude()
+    print(amplitude.R)
