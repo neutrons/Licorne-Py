@@ -85,7 +85,7 @@ class Layer(object):
 
 class Amplitude(object):
     """ Scattering amplitude """
-    def __init__(self, layers, p_i, p_f, n_alpha_i=5, n_wl=30, wl_min=1, wl_max=15, alpha_i_min=0.005, alpha_i_max=5):
+    def __init__(self, layers, p_i=[0,0,1], p_f=[0,0,1], n_alpha_i=5, n_wl=2, wl_min=2, wl_max=5, alpha_i_min=0.05, alpha_i_max=5):
         # Ordered list of layers
         self.layers = layers
         self.n_alpha_i = n_alpha_i
@@ -98,6 +98,7 @@ class Amplitude(object):
         self.p_i = np.asarray(p_i)
         self.p_f = np.asarray(p_f)
         self.R = np.zeros([self.n_alpha_i, self.n_wl], dtype=np.complex)
+        #self.R = n_alpha_i*[n_wl*[np.zeros([2,2], dtype=np.complex)]]
 
         for i, layer in enumerate(self.layers):
             layer.initialize(self.n_alpha_i, self.n_wl)
@@ -119,8 +120,7 @@ class Amplitude(object):
             for i_alpha_i in range(self.n_alpha_i):
                 # 1.10
                 _alpha_i = self.alpha_i_min + i_alpha_i * (self.alpha_i_max - self.alpha_i_min) / (self.n_alpha_i - 1)
-                # 1.11 CHECK
-                #_p_i0[i_alpha_i][i_wl] = 2.0 * np.pi * np.sin(_alpha_i / _wl)   as written
+                # 1.11
                 _p_i0[i_alpha_i][i_wl] = 2.0 * np.pi * np.sin(_alpha_i) / _wl
 
                 for i, layer in enumerate(self.layers):
@@ -138,20 +138,20 @@ class Amplitude(object):
                     layer.e_i_minus[i_alpha_i][i_wl] = np.exp(1j * layer.phi_i_minus[i_alpha_i][i_wl])
 
                     # 1.15, 1.16
-                    p_i = build_spin_matrix(layer.p_i_plus[i_alpha_i][i_wl], layer.p_i_minus[i_alpha_i][i_wl], layer.b)
+                    p_i = build_spin_matrix(layer.p_i_plus[i_alpha_i][i_wl], layer.p_i_minus[i_alpha_i][i_wl], layer.b) / 2.0
 
                     # 1.17 - invert p_i
                     p_i_inv = linalg.inv(p_i)
 
-                    # For some reason the p matrices are defined with a factor 1/2
-                    p_i = p_i / 2.0
-                    p_i_inv = p_i_inv / 2.0
+                    # For some reason the p matrices are defined with a factor 1/2 
+                    #p_i = p_i / 2.0   ERROR IN MANUSCRIPT
+                    #p_i_inv = p_i_inv / 2.0
                     layer.p_i_matrix[i_alpha_i][i_wl] = p_i
                     layer.p_i_inv_matrix[i_alpha_i][i_wl] = p_i_inv
 
                     # 1.18, 1.19
                     e_i = build_spin_matrix(layer.e_i_plus[i_alpha_i][i_wl], layer.e_i_minus[i_alpha_i][i_wl], layer.b)
-                    layer.e_i_matrix[i_alpha_i][i_wl] = e_i
+                    layer.e_i_matrix[i_alpha_i][i_wl] = e_i / 2.0
 
                 # 1.20, 1.21 -  Roughness - if roughness = 0, we get identity
                 # Here we should be careful with the first and last layer
@@ -192,19 +192,14 @@ class Amplitude(object):
                         b_i_t = b_i_t / (w_it_plus - w_it_minus)
 
                     # 1.24 Eigenvalues of D-W exponents
-                    layer.e_ir_plus = np.exp(-w_ir_plus)
-                    layer.e_ir_minus = np.exp(-w_ir_minus)
-                    layer.e_it_plus = np.exp(-w_it_plus)
-                    layer.e_it_minus = np.exp(-w_it_minus)
-
-                    # Sanity check
-                    if layer.roughness == 0:
-                        if not (layer.e_ir_plus==1.0 and layer.e_ir_minus==1.0 and layer.e_it_plus==1.0 and layer.e_it_minus==1.0):
-                            raise RuntimeError("Roughness calculation is wrong")
+                    layer.e_ir_plus[i_alpha_i][i_wl] = np.exp(-w_ir_plus)
+                    layer.e_ir_minus[i_alpha_i][i_wl] = np.exp(-w_ir_minus)
+                    layer.e_it_plus[i_alpha_i][i_wl] = np.exp(-w_it_plus)
+                    layer.e_it_minus[i_alpha_i][i_wl] = np.exp(-w_it_minus)
 
                     # 1.25, 1.26
-                    e_ir = build_spin_matrix(layer.e_ir_plus, layer.e_ir_minus, b_i_r) / 2.0
-                    e_it = build_spin_matrix(layer.e_it_plus, layer.e_it_minus, b_i_t) / 2.0
+                    e_ir = build_spin_matrix(layer.e_ir_plus[i_alpha_i][i_wl], layer.e_ir_minus[i_alpha_i][i_wl], b_i_r) / 2.0
+                    e_it = build_spin_matrix(layer.e_it_plus[i_alpha_i][i_wl], layer.e_it_minus[i_alpha_i][i_wl], b_i_t) / 2.0
                     layer.e_ir_matrix[i_alpha_i][i_wl] = e_ir
                     layer.e_it_matrix[i_alpha_i][i_wl] = e_it
 
@@ -231,9 +226,9 @@ class Amplitude(object):
                     _partial_b = self.layers[i].b_i_matrix[i_alpha_i][i_wl] + np.matmul(self.layers[i].a_i_matrix[i_alpha_i][i_wl], self.layers[i+1].r_i_matrix[i_alpha_i][i_wl])
                     try:
                         _partial_b = linalg.inv(_partial_b)
-                        #_r_i = np.matmul(_partial_b, self.layers[i].e_i_matrix[i_alpha_i][i_wl])
-                        #_r_i = np.matmul(_partial_a, _r_i)
-                        #_r_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], _r_i)
+                        _r_i = np.matmul(_partial_b, self.layers[i].e_i_matrix[i_alpha_i][i_wl])
+                        _r_i = np.matmul(_partial_a, _r_i)
+                        _r_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], _r_i)
                         _r_i = np.matmul(_partial_a, _partial_b)
                         self.layers[i].r_i_matrix[i_alpha_i][i_wl] = _r_i
                     except:
@@ -247,34 +242,29 @@ class Amplitude(object):
                     #print('partial a shape: %s' % str(_partial_a.shape))
                     try:
                         _partial_a = linalg.inv(_partial_a)
-
+                        t_i = np.matmul(self.layers[i].t_i_matrix[i_alpha_i][i_wl], self.layers[i].e_i_matrix[i_alpha_i][i_wl])
                         #t_i = np.matmul(self.layers[i].t_i_matrix[i_alpha_i][i_wl], self.layers[i].e_it_matrix[i_alpha_i][i_wl])
-                        #t_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], t_i)
-                        #t_i = 2.0 * np.matmul(_partial_a, t_i)
+                        #t_i = self.layers[i].t_i_matrix[i_alpha_i][i_wl]
+                        t_i = np.matmul(self.layers[i].e_i_matrix[i_alpha_i][i_wl], t_i)
+                        t_i = 2.0 * np.matmul(_partial_a, t_i)
                         t_i = np.matmul(_partial_a, self.layers[i].t_i_matrix[i_alpha_i][i_wl])
                         self.layers[i+1].t_i_matrix[i_alpha_i][i_wl] = t_i
                     except:
                         print("1.30 OOPS! Layer %s" % i)
 
-                #TODO: what do we do with this?
-                for i in range(len(self.layers)):
-                    r_amplitude_i = np.matmul(self.layers[i].r_i_matrix[i_alpha_i][i_wl], self.layers[i].t_i_matrix[i_alpha_i][i_wl])
-
                 # 1.32
-                N = 0#len(self.layers)-1
-                #print(self.layers[N].r_i_matrix[i_alpha_i][i_wl].shape)
-                #print(self.layers[N].t_i_matrix[i_alpha_i][i_wl].shape)
-                r_amplitude_N = np.matmul(self.layers[N].r_i_matrix[i_alpha_i][i_wl], self.layers[N].t_i_matrix[i_alpha_i][i_wl])
+                #self.R[i_alpha_i][i_wl] = 0#np.zeros([2,2], dtype=np.complex)
 
+                r_i_amplitude_i = np.matmul(self.layers[0].r_i_matrix[i_alpha_i][i_wl], self.layers[0].t_i_matrix[i_alpha_i][i_wl])
                 # 1.33
-                r_i_plus_0 = np.asarray(np.matrix(r_amplitude_N).H)
+                r_i_plus_i = np.asarray(np.matrix(r_i_amplitude_i).H)
 
                 # 1.34
-                _r = np.matmul(self.rho_i(), r_i_plus_0)
-                _r = np.matmul(r_amplitude_N, _r)
+                _r = np.matmul(self.rho_i(), r_i_plus_i)
+                _r = np.matmul(r_i_amplitude_i, _r)
                 _r = np.matmul(self.rho_f(), _r)
-
-                self.R[i_alpha_i][i_wl] = _r[0][0] + _r[1][1]
+                # Look at the 1,1 entry for now
+                self.R[i_alpha_i][i_wl] += _r[0][0] + _r[1][1]
 
     def reflectivity(self, i_wl):
         _wl = self.wl_min + i_wl * (self.wl_max - self.wl_min) / (self.n_wl - 1)
@@ -285,7 +275,7 @@ class Amplitude(object):
             _alpha_i = self.alpha_i_min + i_alpha_i * (self.alpha_i_max - self.alpha_i_min) / (self.n_alpha_i - 1)
             _q = 4.0 * np.pi * np.sin(_alpha_i) / _wl
             q_array.append(_q.real)
-            r_array.append(self.R[i_alpha_i][i_wl].real)
+            r_array.append(self.R[i_alpha_i][i_wl].real)#[0][0])
             #print("%6g  %6g" % (_q, self.R[i_alpha_i][i_wl].real))
         return q_array, r_array
 
