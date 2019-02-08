@@ -3,6 +3,8 @@ import sys, os, copy
 import yaml
 import numpy as np
 import matplotlib
+import zipfile
+import shutil
 
 matplotlib.use('qt5agg')
 import licorne.layer
@@ -103,6 +105,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionSave_layers.triggered.connect(self.save_layers)
         self.actionSave_status.triggered.connect(self.save_state_dialog)
         self.actionLoad_status.triggered.connect(self.load_state_dialog)
+        self.actionSave_report.triggered.connect(self.save_report)
 
         self.pushButton_plot.clicked.connect(self.do_plot)
         self.pushButton_fit.clicked.connect(self.do_fit)
@@ -111,6 +114,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.fit_thread = FitWorker()
         self.fit_thread.chiSquaredChanged[float].connect(self.update_fit)
         self.fit_thread.smChanged[minimizer.MinimizerResult].connect(self.update_from_fit_parameters)
+
+    def save_report(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save report",
+                                                             "", "zip (*.zip);;All Files (*)",
+                                                             options=options)
+        if file_name:
+            folder=os.path.join(lu.tempdir().get_tempdir(),
+                                os.path.splitext(os.path.basename(file_name))[0])
+            if os.path.isdir(folder):
+                shutil.rmtree(folder)
+            os.mkdir(folder)
+            files_to_zip=[]
+            #save layers
+            with open(os.path.join(folder,'layers.txt'),'w') as f:
+                f.write('#incoming media\n')
+                f.write(self.sample_model.incoming_media.__repr__())
+                f.write('\n#layers\n')
+                for l in self.sample_model.layers:
+                    f.write(l.__repr__()+'\n')
+                f.write('#substrate\n')
+                f.write(self.sample_model.substrate.__repr__())
+            files_to_zip.append(os.path.join(folder,'layers.txt'))
+
+            with zipfile.ZipFile(file_name, 'w') as myzip:
+                for f in files_to_zip:
+                    myzip.write(f,os.path.basename(f))
+
 
     def update_from_fit_parameters(self, pars):
         ma = ModelAdapter(self.sample_model)
