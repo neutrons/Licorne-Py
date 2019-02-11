@@ -138,7 +138,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 f.write('#substrate\n')
                 f.write(self.sample_model.substrate.__repr__())
             files_to_zip.append(os.path.join(folder,'layers.txt'))
-
+            #save sublayers
+            with open(os.path.join(folder,'sublayers.txt'),'wb') as f:
+                layers = [self.sample_model.incoming_media] + self.sample_model.layers + [self.sample_model.substrate]
+                sublayers = licorne.generateSublayers.generateSublayers(layers)[0]
+                values=[[sl.thickness.value, sl.nsld_real.value,
+                         sl.nsld_imaginary.value, sl.msld.rho.value,
+                         sl.msld.theta.value, sl.msld.phi.value] for sl in sublayers]
+                np.savetxt(f,np.array(values),delimiter=',', fmt=str('%1.6e'),
+                           header='thickness, nsld_real, nsld_imaginary, msld_rho, msld_theta, msld_phi')
+            files_to_zip.append(os.path.join(folder,'sublayers.txt'))
+            #save resolution
+            resolution_filename = os.path.join(lu.tempdir().get_tempdir(),'resolution.py')
+            files_to_zip.append(resolution_filename)
+            #save experimental data and calculated reflectivity
+            if self.data_model is not None:
+                 with open(os.path.join(folder,'data.txt'),'w') as f:
+                    f.write('# Background = {}\n'.format(self.data_model.background))
+                    f.write('# Theory normalization factor = {}\n'.format(self.data_model.theory_factor))
+                    f.write('# Experiment multiplicative factor = {}\n'.format(self.data_model.experiment_factor))
+                    f.write('\n# Data\n')
+                    for i,ds in enumerate(self.data_model.datasets):
+                        if ds.Q is not None:
+                            f.write('\n# ----- Dataset {} -----\n'.format(i))
+                            f.write('# Experimental data filename = {}\n'.format(ds.filename))
+                            f.write('# Polarization polarizer = {}\n'.format(ds.pol_Polarizer))
+                            f.write('# Polarization analyzer = {}\n'.format(ds.pol_Analyzer))
+                            ds_temp=copy.deepcopy(ds)
+                            lq=len(ds_temp.Q)
+                            if ds_temp.R is None:
+                                ds_temp.R=['']*lq             
+                            if ds_temp.E is None:
+                                ds_temp.E=['']*lq
+                            if ds_temp.R_calc is None:
+                                ds_temp.R_calc=['']*lq
+                            f.write('# Q,  R_measured,  Error, R_calculated\n')
+                            for j in range(lq):
+                                f.write('{}, {}, {}, {}\n'.format(ds_temp.Q[j], ds_temp.R[j], ds_temp.E[j], ds_temp.R_calc[j]))                  
+                 files_to_zip.append(os.path.join(folder,'data.txt'))
             with zipfile.ZipFile(file_name, 'w') as myzip:
                 for f in files_to_zip:
                     myzip.write(f,os.path.basename(f))
