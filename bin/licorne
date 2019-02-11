@@ -1,2 +1,3 @@
 #!/bin/sh
+export QT_STYLE_OVERRIDE=gtk2
 /SNS/software/miniconda2/envs/licorne/bin/Licorne

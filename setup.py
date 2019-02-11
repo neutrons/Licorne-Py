@@ -9,7 +9,7 @@ if os.path.isdir("/SNS/software/miniconda2/envs/licorne"):
 
 setup(
     name='licorne-py',
-    version='0.1.2',
+    version='0.1.3',
     description='',
     author='Steven Hahn, Andrei Savici',
     author_email='hahnse@ornl.gov, saviciat@ornl.gov',
