@@ -167,14 +167,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                             ds_temp=copy.deepcopy(ds)
                             lq=len(ds_temp.Q)
                             if ds_temp.R is None:
-                                ds_temp.R=['']*lq             
+                                ds_temp.R=['']*lq
                             if ds_temp.E is None:
                                 ds_temp.E=['']*lq
                             if ds_temp.R_calc is None:
                                 ds_temp.R_calc=['']*lq
                             f.write('# Q,  R_measured,  Error, R_calculated\n')
                             for j in range(lq):
-                                f.write('{}, {}, {}, {}\n'.format(ds_temp.Q[j], ds_temp.R[j], ds_temp.E[j], ds_temp.R_calc[j]))                  
+                                f.write('{}, {}, {}, {}\n'.format(ds_temp.Q[j], ds_temp.R[j], ds_temp.E[j], ds_temp.R_calc[j]))
                  files_to_zip.append(os.path.join(folder,'data.txt'))
             with zipfile.ZipFile(file_name, 'w') as myzip:
                 for f in files_to_zip:
