@@ -5,7 +5,7 @@ package_data = {"licorne": ["UI/*.ui",]}
 
 _scripts = ["bin/Licorne"]
 if os.path.isdir("/SNS/software/miniconda2/envs/licorne"):
-    _scripts =["bin/licorne"]
+    _scripts =["bin/Licorne","bin/licorne"]
 
 setup(
     name='licorne-py',
