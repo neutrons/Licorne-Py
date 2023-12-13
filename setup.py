@@ -3,10 +3,6 @@ import os
 from setuptools import setup
 package_data = {"licorne": ["UI/*.ui",]}
 
-_scripts = ["bin/Licorne"]
-if os.path.isdir("/SNS/software/miniconda2/envs/licorne"):
-    _scripts =["bin/Licorne","bin/licorne"]
-
 setup(
     name='licorne-py',
     version='0.1.3',
@@ -15,7 +11,7 @@ setup(
     author_email='hahnse@ornl.gov, saviciat@ornl.gov',
     url='https://github.com/neutrons/licorne-py',
     license='GPLv3+',
-    scripts=_scripts,
+    scripts=["bin/licorne"],
     packages=['licorne'],
     package_data=package_data,
 )
