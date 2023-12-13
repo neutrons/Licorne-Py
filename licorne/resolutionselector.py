@@ -135,7 +135,6 @@ class ResolutionPlotCanvas(FigureCanvas):
         self.fig.patch.set_facecolor('white')
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
-        matplotlib.rc('text', usetex=True)
         FigureCanvas.setSizePolicy(self,
                 QtWidgets.QSizePolicy.Expanding,
                 QtWidgets.QSizePolicy.Expanding)
@@ -146,8 +145,8 @@ class ResolutionPlotCanvas(FigureCanvas):
         self.fig.clear()
         ax = self.fig.add_subplot(111)
         ax.plot(x,y)
-        ax.set_xlabel(r'Momentum transfer Q $({\textrm \AA}^{-1})$')
-        ax.set_ylabel(r'Resolution $\sigma$ $({\textrm \AA}^{-1})$')
+        ax.set_xlabel(r'Momentum transfer Q $({\AA}^{-1})$')
+        ax.set_ylabel(r'Resolution $\sigma$ $({\AA}^{-1})$')
         ax.ticklabel_format(style='sci',scilimits=(-1,1),axis='both')
         self.figure.tight_layout()
         self.draw()
