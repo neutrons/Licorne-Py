@@ -28,9 +28,6 @@ from PyQt5 import QtWidgets, QtCore, uic
 ui = os.path.join(os.path.dirname(__file__), 'UI/MainWindow.ui')
 Ui_MainWindow, QtBaseClass = uic.loadUiType(ui)
 
-matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.preamble'] = ['\\' + 'usepackage{amsmath}']
-
 
 class DataPlotWindow(QtWidgets.QMainWindow):
     def __init__(self):
